@@ -506,56 +506,81 @@ export default function FolderView() {
                                     setSendingQuiz(true);
                                     setSentQuizCount(0);
                                     let s = 0;
+                                    let skipped = 0;
 
                                     for (let i = 0; i < quizTarget.questions.length; i++) {
                                         const q = quizTarget.questions[i];
-                                        // fetch valid non-empty options and shorten them to 100 chars (Telegram max)
+                                        // 1. Matni bor varianlarni ajratib olib 100 belgiga qisqartirish (Telegram limit)
                                         const validOpts = q.options.filter((o: any) => o.text && String(o.text).trim() !== "");
                                         const optionsListText = validOpts.map((o: any) => String(o.text).substring(0, 100));
 
-                                        // minimum 2 options for a poll in TG
-                                        if (optionsListText.length < 2) continue;
-
-                                        const correctIdx = validOpts.findIndex((o: any) => o.label === q.correctAnswer);
-                                        // Telegram quiz REQUIRES a correct answer
-                                        if (correctIdx === -1) continue;
-
-                                        const qText = `${i + 1}. ${q.question}`.substring(0, 300);
-
-                                        try {
-                                            const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                    chat_id: tgChatId.trim(),
-                                                    question: qText,
-                                                    options: optionsListText,
-                                                    type: "quiz",
-                                                    correct_option_id: correctIdx,
-                                                    is_anonymous: true
-                                                })
-                                            });
-                                            if (res.ok) {
-                                                s++;
-                                                setSentQuizCount(s);
-                                            } else {
-                                                const errText = await res.text();
-                                                console.error("Telegram Error:", errText);
-                                                // Agar 429 kelsa, ko'proq kutamiz
-                                                if (res.status === 429) {
-                                                    await new Promise(r => setTimeout(r, 10000));
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error("Fetch Error:", e);
+                                        // 2. Telegram poll kamida 2 ta variant talab qiladi
+                                        if (optionsListText.length < 2) {
+                                            skipped++;
+                                            continue;
                                         }
-                                        // Telegram Group Limit: Max 20 msgs per minute. 
-                                        // 60 seconds / 20 messages = 3 seconds per message max speed.
-                                        // We wait 3.2 seconds unconditionally to prevent hitting the limit!
+
+                                        // 3. To'g'ri javobni (A, B) bo'sh joylarsiz, katta harfda solishtirish
+                                        const correctAns = String(q.correctAnswer || '').trim().toUpperCase();
+                                        const correctIdx = validOpts.findIndex((o: any) => String(o.label || '').trim().toUpperCase() === correctAns);
+
+                                        // Telegram quiz xatolik bermasligi uchun aniq bitta to'g'ri javob kerak
+                                        if (correctIdx === -1) {
+                                            skipped++;
+                                            continue;
+                                        }
+
+                                        // 4. Savol matnini maksimal 300 belgiga qisqartirish
+                                        let qText = `${i + 1}. ${String(q.question || "Savol").trim()}`.substring(0, 300);
+
+                                        // Tarmoqdagi uzilishlar uchun 3 martagacha qayta urinib ko'rish mexanizmi
+                                        let success = false;
+                                        for (let attempt = 1; attempt <= 3; attempt++) {
+                                            try {
+                                                const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        chat_id: tgChatId.trim(),
+                                                        question: qText,
+                                                        options: optionsListText,
+                                                        type: "quiz",
+                                                        correct_option_id: correctIdx,
+                                                        is_anonymous: true
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    success = true;
+                                                    s++;
+                                                    setSentQuizCount(s);
+                                                    break; // Muvaffaqiyatli jo'natildi
+                                                } else {
+                                                    const errText = await res.text();
+                                                    console.error(`Telegram Error Q${i + 1} (Attempt ${attempt}):`, errText);
+                                                    if (res.status === 429) {
+                                                        await new Promise(r => setTimeout(r, 8000)); // Limitga tushsa 8s kutish
+                                                    }
+                                                }
+                                            } catch (e) {
+                                                console.error(`Network Error Q${i + 1} (Attempt ${attempt}):`, e);
+                                            }
+                                            // Xato bo'lsa qayta urinishdan oldin biroz kutish
+                                            if (!success) await new Promise(r => setTimeout(r, 2000));
+                                        }
+
+                                        if (!success) skipped++;
+
+                                        // Telegram Group Limit: Max 20 msgs per minute.
+                                        // 60 seconds / 20 messages = 3 seconds tanaffus qat'iy talab etiladi!
                                         await new Promise(r => setTimeout(r, 3200));
                                     }
                                     setSendingQuiz(false);
-                                    alert(`Muvaffaqiyatli! ${s} ta namunaviy savol quiz shaklida kanalingizga yuborildi.`);
+
+                                    let endMsg = `Muvaffaqiyatli! ${s} ta savol quiz shaklida telegramga yuborildi.`;
+                                    if (skipped > 0) {
+                                        endMsg += `\nDiqqat: ${skipped} ta savol (variantlar xato yoki topilmagani uchun) o'tkazib yuborildi.`;
+                                    }
+                                    alert(endMsg);
                                     setQuizTarget(null);
                                 }} disabled={sendingQuiz || !tgBotToken || !tgChatId} className="px-8 py-2.5 rounded-[12px] bg-[#3B82F6] text-white font-bold hover:bg-[#2563EB] shadow-md shadow-[#3B82F6]/20 disabled:opacity-50 transition-all hover:scale-105 active:scale-95">
                                     {sendingQuiz ? 'Yuborilmoqda...' : 'Yuborish'}
