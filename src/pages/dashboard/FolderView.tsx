@@ -2,20 +2,29 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2 } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2 } from 'lucide-react'
 
 function parseTestText(rawText: string) {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    let mainText = rawText;
+    let answersText = '';
+
+    const splitMatch = rawText.match(/\b(kalitlar|javoblar)\b/i);
+    if (splitMatch && splitMatch.index !== undefined) {
+        mainText = rawText.substring(0, splitMatch.index);
+        answersText = rawText.substring(splitMatch.index);
+    }
+
+    const lines = mainText.split('\n').map(l => l.trim()).filter(Boolean);
     const questions: any[] = [];
     let currentQ: any = null;
-    const qRegex = /^\d+[\.\)]\s*(.*)/;
+    const qRegex = /^(\d+)[\.\)]\s*(.*)/;
     const optRegex = /^([A-Ea-e])[\.\)]\s*(.*)/;
 
     for (const line of lines) {
         const qMatch = line.match(qRegex);
         if (qMatch) {
             if (currentQ) questions.push(currentQ);
-            currentQ = { id: crypto.randomUUID(), question: qMatch[1] || line, options: [] };
+            currentQ = { id: crypto.randomUUID(), num: qMatch[1], question: qMatch[2] || line, options: [] };
             continue;
         }
         const optMatch = line.match(optRegex);
@@ -26,6 +35,33 @@ function parseTestText(rawText: string) {
         if (currentQ && currentQ.options.length === 0) currentQ.question += '\n' + line;
     }
     if (currentQ) questions.push(currentQ);
+
+    const answersMap: Record<string, string> = {};
+    const ansRegex = /\b(\d+)\s*[-=.)]?\s*([A-Ea-e])\b/gi;
+
+    if (answersText) {
+        let match;
+        while ((match = ansRegex.exec(answersText)) !== null) {
+            answersMap[match[1]] = match[2].toUpperCase();
+        }
+    } else {
+        const allLines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+        for (const line of allLines) {
+            if (/^([\d\sA-Ea-e\-.,)]+)$/.test(line)) {
+                let match;
+                while ((match = ansRegex.exec(line)) !== null) {
+                    answersMap[match[1]] = match[2].toUpperCase();
+                }
+            }
+        }
+    }
+
+    questions.forEach((q, index) => {
+        const num = q.num || String(index + 1);
+        q.correctAnswer = answersMap[num] || answersMap[String(index + 1)] || '';
+        delete q.num;
+    });
+
     return questions;
 }
 
@@ -61,9 +97,33 @@ export default function FolderView() {
     const [interactiveMode, setInteractiveMode] = useState(false)
 
     const [rawText, setRawText] = useState('')
+    const [copiedId, setCopiedId] = useState<string | null>(null)
+    const [editingTestId, setEditingTestId] = useState<string | null>(null)
 
     const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
     const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
+
+    const handleOpenEdit = (test: any) => {
+        setEditingTestId(test.id);
+        setCreationMode('manual');
+        setTestTitle(test.title);
+        setDescription(test.settings?.description || '');
+        setTimeLimit(test.settings?.timeLimit ? String(test.settings.timeLimit) : '');
+        setStartTime(test.settings?.startTime || '');
+        setEndTime(test.settings?.endTime || '');
+        setShowResults(test.settings?.showResults ?? true);
+        setInteractiveMode(test.settings?.interactiveMode ?? false);
+        setManualQs(test.questions && test.questions.length > 0 ? test.questions : [getEmptyQ()]);
+        setIsModalOpen(true);
+    }
+
+    const openNewTest = () => {
+        setEditingTestId(null);
+        setCreationMode('auto');
+        setTestTitle(''); setDescription(''); setTimeLimit(''); setStartTime(''); setEndTime('');
+        setShowResults(true); setInteractiveMode(false); setRawText(''); setManualQs([getEmptyQ()]);
+        setIsModalOpen(true);
+    }
 
     const fetchFolderData = async () => {
         setLoading(true)
@@ -99,12 +159,9 @@ export default function FolderView() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { error } = await supabase.from('tests').insert([{
-            folder_id: id,
-            user_id: user.id,
+        const payload = {
             title: testTitle,
             questions: finalQuestions,
-            answers: {},
             settings: {
                 description: description.trim(),
                 timeLimit: timeLimit ? parseInt(timeLimit) : null,
@@ -112,15 +169,18 @@ export default function FolderView() {
                 endTime: endTime || null,
                 showResults,
                 interactiveMode
-            },
-            is_active: true
-        }])
+            }
+        };
 
-        if (!error) {
-            setIsModalOpen(false)
-            setTestTitle(''); setDescription(''); setRawText(''); setManualQs([getEmptyQ()])
-            fetchFolderData()
-        } else { alert("Xatolik: " + error.message) }
+        if (editingTestId) {
+            const { error } = await supabase.from('tests').update(payload).eq('id', editingTestId);
+            if (!error) { setIsModalOpen(false); fetchFolderData(); }
+            else { alert("Xatolik: " + error.message); }
+        } else {
+            const { error } = await supabase.from('tests').insert([{ ...payload, folder_id: id, user_id: user.id, answers: {}, is_active: true }]);
+            if (!error) { setIsModalOpen(false); fetchFolderData(); }
+            else { alert("Xatolik: " + error.message); }
+        }
         setParsing(false)
     }
 
@@ -138,7 +198,7 @@ export default function FolderView() {
                     <h1 className="text-4xl font-black text-zinc-900 tracking-tight">{folder.name}</h1>
                     <p className="text-zinc-500 font-medium mt-2 text-lg">Ichki testlar ro'yxati</p>
                 </div>
-                <button onClick={() => setIsModalOpen(true)} className="px-6 py-3.5 bg-[#004B49] text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39]">
+                <button onClick={openNewTest} className="px-6 py-3.5 bg-[#004B49] text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39]">
                     <Plus className="w-5 h-5" /> Yangi Test Yaratish
                 </button>
             </div>
@@ -152,7 +212,64 @@ export default function FolderView() {
                             </div>
                         </div>
                         <h3 className="text-2xl font-black text-zinc-900 line-clamp-1">{test.title}</h3>
-                        <p className="text-sm font-bold text-zinc-400 mb-6">{test.questions?.length || 0} ta tayyor savollar</p>
+                        <p className="text-sm font-bold text-zinc-400 mb-4">{test.questions?.length || 0} ta tayyor savollar</p>
+
+                        <div className="flex flex-col gap-2 mb-6">
+                            {test.settings?.description && (
+                                <p className="text-sm font-medium text-zinc-500 line-clamp-2 leading-relaxed">
+                                    {test.settings.description}
+                                </p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                <span className="text-[11px] font-bold text-zinc-400 bg-zinc-100/80 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {new Date(test.created_at || Date.now()).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '')}
+                                </span>
+                                {test.settings?.timeLimit && (
+                                    <span className="text-[11px] font-bold text-orange-500 bg-orange-50 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5" /> {test.settings.timeLimit} daq
+                                    </span>
+                                )}
+                                {test.settings?.interactiveMode && (
+                                    <span className="text-[11px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1.5 rounded-lg">
+                                        ⚡️ Interaktiv
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="mt-auto flex gap-2 w-full border-t border-zinc-100 pt-5">
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/dashboard/results`); // Temporary route, should be parameterized if possible
+                            }} className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-bold py-3 hover:bg-blue-100 rounded-xl transition-colors shrink-0" title="O'quvchilar natijalari">
+                                <BarChart2 className="w-4 h-4" /> Natijalar
+                            </button>
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                const link = `${window.location.origin}/t/${test.id}`;
+                                navigator.clipboard.writeText(link);
+                                setCopiedId(test.id);
+                                setTimeout(() => setCopiedId(null), 2000);
+                            }} className={`flex-1 flex items-center justify-center gap-1.5 font-bold py-3 rounded-xl transition-colors shrink-0 ${copiedId === test.id ? 'bg-[#31C48D] text-white hover:bg-[#31C48D]' : 'bg-[#004B49]/5 text-[#004B49] hover:bg-[#004B49]/10'}`}>
+                                {copiedId === test.id ? <><CheckCircle2 className="w-4 h-4" /> Olindi</> : <><Link2 className="w-4 h-4" /> Havola</>}
+                            </button>
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEdit(test);
+                            }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 rounded-xl transition-colors" title="Testni Tahrirlash/Ko'rish">
+                                <Edit2 className="w-5 h-5" />
+                            </button>
+                            <button onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm("Haqiqatan ham ushbu testni o'chirmoqchimisiz? Barcha biriktirilgan natijalar ham o'chib ketadi!")) {
+                                    const { error } = await supabase.from('tests').delete().eq('id', test.id);
+                                    if (!error) fetchFolderData();
+                                    else alert("Xatolik: " + error.message);
+                                }
+                            }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-red-50 text-red-500 hover:text-red-600 hover:bg-red-100 rounded-xl transition-colors" title="Testni O'chirish">
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        </div>
                     </motion.div>
                 ))}
             </div>
@@ -164,11 +281,16 @@ export default function FolderView() {
                         <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-[40px] w-full max-w-7xl h-[90vh] relative z-10 shadow-2xl flex flex-col overflow-hidden">
 
                             <div className="px-8 py-6 border-b border-zinc-100 flex justify-between items-center shrink-0">
-                                <h2 className="text-3xl font-black text-zinc-900">Test Markazi</h2>
-                                <div className="flex bg-zinc-100 p-1 rounded-2xl w-[400px]">
-                                    <button onClick={() => setCreationMode('manual')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${creationMode === 'manual' ? 'bg-white shadow text-[#004B49]' : 'text-zinc-500'}`}>Qo'lda kiritish</button>
-                                    <button onClick={() => setCreationMode('auto')} className={`flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl font-bold text-sm ${creationMode === 'auto' ? 'bg-[#004B49] shadow text-white' : 'text-zinc-500'}`}><Wand2 className="w-4 h-4" /> Avto (Parser)</button>
-                                </div>
+                                <h2 className="text-3xl font-black text-zinc-900">{editingTestId ? 'Testni Tahrirlash' : 'Test Markazi'}</h2>
+                                {!editingTestId && (
+                                    <div className="flex bg-zinc-100 p-1 rounded-2xl w-[400px]">
+                                        <button onClick={() => setCreationMode('manual')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${creationMode === 'manual' ? 'bg-white shadow text-[#004B49]' : 'text-zinc-500'}`}>Qo'lda kiritish</button>
+                                        <button onClick={() => setCreationMode('auto')} className={`flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl font-bold text-sm ${creationMode === 'auto' ? 'bg-[#004B49] shadow text-white' : 'text-zinc-500'}`}><Wand2 className="w-4 h-4" /> Avto (Parser)</button>
+                                    </div>
+                                )}
+                                {editingTestId && (
+                                    <div className="px-5 py-2.5 bg-orange-50 text-orange-600 font-bold rounded-xl text-sm flex items-center gap-2"><Edit2 className="w-4 h-4" /> Tahrirlash (Ko'rish) Rejimidasiz</div>
+                                )}
                                 <button onClick={() => setIsModalOpen(false)} className="p-3 text-zinc-400 hover:bg-zinc-100 rounded-full"><X className="w-6 h-6" /></button>
                             </div>
 
@@ -177,7 +299,7 @@ export default function FolderView() {
                                     {creationMode === 'auto' ? (
                                         <div className="h-full flex flex-col">
                                             <label className="block text-sm font-bold text-zinc-700 mb-3 ml-2 uppercase">Test matni</label>
-                                            <textarea value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="1. O'zbekistonning poytaxti qayer?&#10;A) Buxoro B) Toshkent C) Samarqand D) Xiva" className="flex-1 w-full px-6 py-5 bg-zinc-50 border-2 border-zinc-100 rounded-3xl outline-none focus:border-[#004B49] focus:bg-white text-lg resize-none" />
+                                            <textarea value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="1. O'zbekistonning poytaxti qayer?&#10;A) Buxoro B) Toshkent C) Samarqand D) Xiva&#10;&#10;2. ...&#10;&#10;Kalitlar:&#10;1-B, 2-C" className="flex-1 w-full px-6 py-5 bg-zinc-50 border-2 border-zinc-100 rounded-3xl outline-none focus:border-[#004B49] focus:bg-white text-lg resize-none leading-relaxed" />
                                         </div>
                                     ) : (
                                         <div className="space-y-8 pb-10">

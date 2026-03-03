@@ -7,6 +7,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Folders from './pages/dashboard/Folders';
 import FolderView from './pages/dashboard/FolderView';
+import TestPlayer from './pages/student/TestPlayer';
 
 export default function App() {
   return (
@@ -27,7 +28,7 @@ export default function App() {
         </Route>
 
         {/* Student Route Placeholder (Public) */}
-        <Route path="/t/:testId" element={<div className="p-10 font-bold text-2xl text-center">O'quvchi Test Oynasi Kutib Olish...</div>} />
+        <Route path="/t/:id" element={<TestPlayer />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
