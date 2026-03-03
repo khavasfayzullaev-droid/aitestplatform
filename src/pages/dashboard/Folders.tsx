@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FolderPlus, Folder, X, Loader2, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import ConfirmModal from '../../components/ConfirmModal'
 
 export default function Folders() {
     const navigate = useNavigate()
@@ -11,6 +12,8 @@ export default function Folders() {
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [newFolderName, setNewFolderName] = useState('')
     const [creating, setCreating] = useState(false)
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const fetchFolders = async () => {
         setLoading(true)
@@ -54,16 +57,22 @@ export default function Folders() {
         setCreating(false)
     }
 
-    const handleDeleteFolder = async (e: React.MouseEvent, id: string, name: string) => {
-        e.stopPropagation()
-        if (!confirm(`Haqiqatan ham "${name}" papkasini va uning ichidagi BARCHA testlarni o'chirib yubormoqchimisiz?`)) return
-
-        const { error } = await supabase.from('folders').delete().eq('id', id)
+    const confirmDelete = async () => {
+        if (!deleteTarget) return
+        setIsDeleting(true)
+        const { error } = await supabase.from('folders').delete().eq('id', deleteTarget.id)
         if (!error) {
+            setDeleteTarget(null)
             fetchFolders()
         } else {
             alert("Xatolik: O'chirish ruxsati yo'q yeki baza bilan muammo: " + error.message)
         }
+        setIsDeleting(false)
+    }
+
+    const handleDeleteFolder = (e: React.MouseEvent, id: string, name: string) => {
+        e.stopPropagation()
+        setDeleteTarget({ id, name })
     }
 
     return (
@@ -169,6 +178,15 @@ export default function Folders() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmModal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                isLoading={isDeleting}
+                title="Papkani o'chirish!"
+                message={`Haqiqatan ham "${deleteTarget?.name}" papkasini va uning ichidagi BARCHA testlarni o'chirib yubormoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi!`}
+            />
         </motion.div>
     )
 }

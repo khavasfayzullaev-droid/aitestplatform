@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2 } from 'lucide-react'
+import ConfirmModal from '../../components/ConfirmModal'
 
 function parseTestText(rawText: string) {
     let mainText = rawText;
@@ -99,6 +100,10 @@ export default function FolderView() {
     const [rawText, setRawText] = useState('')
     const [copiedId, setCopiedId] = useState<string | null>(null)
     const [editingTestId, setEditingTestId] = useState<string | null>(null)
+
+    // Deletion Modal States
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string, title: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
     const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
@@ -259,13 +264,9 @@ export default function FolderView() {
                             }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 rounded-xl transition-colors" title="Testni Tahrirlash/Ko'rish">
                                 <Edit2 className="w-5 h-5" />
                             </button>
-                            <button onClick={async (e) => {
+                            <button onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm("Haqiqatan ham ushbu testni o'chirmoqchimisiz? Barcha biriktirilgan natijalar ham o'chib ketadi!")) {
-                                    const { error } = await supabase.from('tests').delete().eq('id', test.id);
-                                    if (!error) fetchFolderData();
-                                    else alert("Xatolik: " + error.message);
-                                }
+                                setDeleteTarget({ id: test.id, title: test.title });
                             }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-red-50 text-red-500 hover:text-red-600 hover:bg-red-100 rounded-xl transition-colors" title="Testni O'chirish">
                                 <Trash2 className="w-5 h-5" />
                             </button>
@@ -375,6 +376,28 @@ export default function FolderView() {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Test Deletion Modal */}
+            <ConfirmModal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={async () => {
+                    if (!deleteTarget) return
+                    setIsDeleting(true)
+                    const { error } = await supabase.from('tests').delete().eq('id', deleteTarget.id)
+                    if (!error) {
+                        setDeleteTarget(null)
+                        fetchFolderData()
+                    } else {
+                        alert("Xatolik: " + error.message)
+                    }
+                    setIsDeleting(false)
+                }}
+                isLoading={isDeleting}
+                title="Testni O'chirish!"
+                message={`Haqiqatan ham "${deleteTarget?.title}" nomli ushbu testni o'chirasizmi? Uning ichidagi BARCHA bog'langan natijalar, savollar o'chib ketadi!`}
+                confirmText="Ha, o'chib ketsin"
+            />
         </motion.div>
     )
 }

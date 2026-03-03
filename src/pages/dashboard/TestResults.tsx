@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { ArrowLeft, Loader2, Users, TrendingUp, Target, AlertTriangle, Trash2 } from 'lucide-react'
+import ConfirmModal from '../../components/ConfirmModal'
 
 export default function TestResults() {
     const { testId } = useParams()
@@ -14,6 +15,9 @@ export default function TestResults() {
     const [masteryPercent, setMasteryPercent] = useState(0)
     const [hardestQ, setHardestQ] = useState<any>(null)
     const [easiestQ, setEasiestQ] = useState<any>(null)
+
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string } | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const fetchResults = async () => {
         setLoading(true)
@@ -89,14 +93,21 @@ export default function TestResults() {
         if (testId) fetchResults()
     }, [testId])
 
-    const handleDelete = async (subId: string, studentName: string) => {
-        if (!confirm(`${studentName} nomli o'quvchi natijasini ro'yxatdan va bazadan butunlay o'chirib tashlamoqchimisiz?`)) return
-        const { error } = await supabase.from('submissions').delete().eq('id', subId)
+    const confirmDelete = async () => {
+        if (!deleteTarget) return
+        setIsDeleting(true)
+        const { error } = await supabase.from('submissions').delete().eq('id', deleteTarget.id)
         if (error) {
             alert("Xatolik: O'chirish ruxsati yo'q! " + error.message)
         } else {
+            setDeleteTarget(null)
             fetchResults()
         }
+        setIsDeleting(false)
+    }
+
+    const handleDelete = (subId: string, studentName: string) => {
+        setDeleteTarget({ id: subId, name: studentName })
     }
 
     if (loading) return (
@@ -227,6 +238,16 @@ export default function TestResults() {
                     </table>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={!!deleteTarget}
+                onClose={() => setDeleteTarget(null)}
+                onConfirm={confirmDelete}
+                isLoading={isDeleting}
+                title="Yana bir o'ylab ko'ring"
+                message={`Haqiqatan ham "${deleteTarget?.name}" ning xavolalarini, natijalarini bu ro'yxatdan va bazadan butunlay o'chirib tashlamoqchimisiz?`}
+                confirmText="O'chirishga roziman"
+            />
         </div>
     )
 }
