@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2 } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
+import { useReactToPrint } from 'react-to-print'
+import { useRef } from 'react'
+import { PrintTest } from '../../components/pdf/PrintTest'
 
 function parseTestText(rawText: string) {
     let mainText = rawText;
@@ -108,6 +111,21 @@ export default function FolderView() {
     const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
     const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
 
+    // PDF Printing states
+    const printRef = useRef<HTMLDivElement>(null)
+    const [printingTests, setPrintingTests] = useState<any[]>([])
+    const handlePrintContent = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: folder?.name ? `${folder.name} Testlari` : 'Testlar'
+    })
+
+    const handlePrint = (testsToPrint: any[]) => {
+        setPrintingTests(testsToPrint)
+        setTimeout(() => {
+            handlePrintContent()
+        }, 300) // allow DOM to layout the invisible component
+    }
+
     const handleOpenEdit = (test: any) => {
         setEditingTestId(test.id);
         setCreationMode('manual');
@@ -203,9 +221,14 @@ export default function FolderView() {
                     <h1 className="text-4xl font-black text-zinc-900 tracking-tight">{folder.name}</h1>
                     <p className="text-zinc-500 font-medium mt-2 text-lg">Ichki testlar ro'yxati</p>
                 </div>
-                <button onClick={openNewTest} className="px-6 py-3.5 bg-[#004B49] text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39]">
-                    <Plus className="w-5 h-5" /> Yangi Test Yaratish
-                </button>
+                <div className="flex gap-3">
+                    <button onClick={() => tests.length > 0 ? handlePrint(tests) : alert("Papka ichida testlar yo'q!")} className="px-6 py-3.5 bg-zinc-900 text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-zinc-900/20 hover:bg-zinc-800 transition-colors">
+                        <Printer className="w-5 h-5" /> <span className="hidden sm:inline">Barcha Testlar (PDF)</span>
+                    </button>
+                    <button onClick={openNewTest} className="px-6 py-3.5 bg-[#004B49] text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39]">
+                        <Plus className="w-5 h-5" /> Yangi Test Yaratish
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -215,6 +238,12 @@ export default function FolderView() {
                             <div className="w-14 h-14 bg-[#EEF2F1] group-hover:bg-[#004B49] rounded-xl flex items-center justify-center transition-colors">
                                 <FileText className="w-7 h-7 text-[#004B49] group-hover:text-white" />
                             </div>
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                handlePrint([test]);
+                            }} className="w-10 h-10 bg-zinc-100 text-zinc-600 hover:text-white hover:bg-zinc-900 rounded-xl rounded-bl-3xl flex items-center justify-center transition-colors shadow-sm" title="Joriy Testni PDF qilish">
+                                <Printer className="w-4 h-4" />
+                            </button>
                         </div>
                         <h3 className="text-2xl font-black text-zinc-900 line-clamp-1">{test.title}</h3>
                         <p className="text-sm font-bold text-zinc-400 mb-4">{test.questions?.length || 0} ta tayyor savollar</p>
@@ -398,6 +427,11 @@ export default function FolderView() {
                 message={`Haqiqatan ham "${deleteTarget?.title}" nomli ushbu testni o'chirasizmi? Uning ichidagi BARCHA bog'langan natijalar, savollar o'chib ketadi!`}
                 confirmText="Ha, o'chib ketsin"
             />
+
+            {/* Hidden Print Wrapper */}
+            <div style={{ display: 'none' }}>
+                <PrintTest ref={printRef} tests={printingTests} folderName={folder.name} />
+            </div>
         </motion.div>
     )
 }

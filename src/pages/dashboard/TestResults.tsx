@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { ArrowLeft, Loader2, Users, TrendingUp, Target, AlertTriangle, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Users, TrendingUp, Target, AlertTriangle, Trash2, Printer } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
+import { useReactToPrint } from 'react-to-print'
+import { useRef } from 'react'
+import { PrintResults } from '../../components/pdf/PrintResults'
 
 export default function TestResults() {
     const { testId } = useParams()
@@ -18,6 +21,12 @@ export default function TestResults() {
 
     const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+
+    const printRef = useRef<HTMLDivElement>(null)
+    const handlePrint = useReactToPrint({
+        contentRef: printRef,
+        documentTitle: testData?.title ? `${testData.title} Natijalari` : 'Natijalar'
+    })
 
     const fetchResults = async () => {
         setLoading(true)
@@ -121,14 +130,23 @@ export default function TestResults() {
     return (
         <div className="max-w-6xl mx-auto pb-20">
             {/* Header */}
-            <div className="flex items-center gap-4 mb-8">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-zinc-100 hover:bg-zinc-50 transition-colors">
-                    <ArrowLeft className="w-6 h-6 text-zinc-600" />
-                </button>
-                <div>
-                    <h1 className="text-3xl font-black text-zinc-900 line-clamp-1">{testData.title}</h1>
-                    <p className="font-semibold text-zinc-500 mt-1">Natijalar va Tahlika (Analitika) Paneli</p>
+            <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-zinc-100 hover:bg-zinc-50 transition-colors">
+                        <ArrowLeft className="w-6 h-6 text-zinc-600" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-black text-zinc-900 line-clamp-1">{testData.title}</h1>
+                        <p className="font-semibold text-zinc-500 mt-1">Natijalar va Tahlika (Analitika) Paneli</p>
+                    </div>
                 </div>
+                <button
+                    onClick={() => handlePrint()}
+                    className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-bold rounded-2xl shadow-xl shadow-zinc-900/20 hover:bg-zinc-800 transition-colors"
+                >
+                    <Printer className="w-5 h-5" />
+                    <span className="hidden sm:inline">PDF Vedomost</span>
+                </button>
             </div>
 
             {/* Analytics Grid */}
@@ -248,6 +266,11 @@ export default function TestResults() {
                 message={`Haqiqatan ham "${deleteTarget?.name}" ning xavolalarini, natijalarini bu ro'yxatdan va bazadan butunlay o'chirib tashlamoqchimisiz?`}
                 confirmText="O'chirishga roziman"
             />
+
+            {/* Hidden Print Wrapper */}
+            <div style={{ display: 'none' }}>
+                <PrintResults ref={printRef} testData={testData} submissions={submissions} />
+            </div>
         </div>
     )
 }
