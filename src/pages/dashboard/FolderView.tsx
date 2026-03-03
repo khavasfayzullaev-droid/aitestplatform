@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer, Send, AlertCircle } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer, Send, AlertCircle, Info } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
 import { useReactToPrint } from 'react-to-print'
 import { useRef } from 'react'
@@ -493,9 +493,16 @@ export default function FolderView() {
                             ) : (
                                 <>
                                     <div className="p-6 overflow-y-auto">
-                                        <div className="bg-[#F0F7FF] rounded-xl p-4 flex items-start gap-4 mb-6 border border-blue-100">
-                                            <AlertCircle className="w-6 h-6 text-[#3B82F6] shrink-0 mt-0.5" />
-                                            <p className="text-[14.5px] text-slate-700 leading-relaxed font-medium">Tasvir bo'yicha haqiqiy viktorinalar chiqarish uchun bot kerak. BotFather orqali bot oching. <b>Token</b> ni yozing va botni o'zingizning kanalingizga admin qiling.</p>
+                                        <div className="bg-[#F0F7FF] rounded-[16px] p-5 mb-6 border border-blue-100">
+                                            <h4 className="font-bold text-blue-900 mb-3 flex items-center gap-2 text-[15px]">
+                                                <Info className="w-5 h-5 text-blue-500" /> Botingizni qanday ulanadi?
+                                            </h4>
+                                            <ol className="list-decimal list-outside ml-4 space-y-2.5 text-[14px] text-blue-900/80 font-medium leading-relaxed">
+                                                <li>Telegramdan <b className="text-blue-700">@BotFather</b> ni qidiring, <b>/newbot</b> buyrug'ini yozib yangi botingizga nom bering.</li>
+                                                <li>Bot senga <b>Token</b> raqamini jo'natadi (Masalan: <i>123...:AAF...</i>). Uni nusxalab oling va pastdagi birinchi qatorga joylang.</li>
+                                                <li>Yangi ochilgan botni test tashlanadigan guruhingiz yoki kanalingizga <b className="text-blue-700">Admin</b> qilib qo'shing.</li>
+                                                <li>O'sha kanal/guruhning manzilini (Masalan: <b>@kanalim</b>) pastdagi ikkinchi qatorga yozing. Bo'ldi! 🎉</li>
+                                            </ol>
                                         </div>
 
                                         <div className="space-y-5">
