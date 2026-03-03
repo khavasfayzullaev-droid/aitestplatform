@@ -7,7 +7,7 @@ interface PrintTestProps {
 
 export const PrintTest = React.forwardRef<HTMLDivElement, PrintTestProps>(({ tests, folderName }, ref) => {
     return (
-        <div ref={ref} className="bg-white text-black p-12 pr-16 w-[210mm] mx-auto" style={{ minHeight: '297mm', fontFamily: 'Times New Roman, serif' }}>
+        <div ref={ref} className="bg-white text-black p-12 pr-16 w-[210mm] mx-auto" style={{ minHeight: '297mm', fontFamily: 'Times New Roman, serif', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
             {tests.map((test, tIndex) => (
                 <div key={test.id} style={{ pageBreakAfter: tIndex < tests.length - 1 ? 'always' : 'auto' }}>
 
