@@ -522,42 +522,37 @@ export default function FolderView() {
 
                                         const qText = `${i + 1}. ${q.question}`.substring(0, 300);
 
-                                        let retries = 0;
-                                        while (retries < 5) {
-                                            try {
-                                                const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({
-                                                        chat_id: tgChatId.trim(),
-                                                        question: qText,
-                                                        options: optionsListText,
-                                                        type: "quiz",
-                                                        correct_option_id: correctIdx,
-                                                        is_anonymous: true
-                                                    })
-                                                });
-                                                if (res.ok) {
-                                                    s++;
-                                                    setSentQuizCount(s);
-                                                    await new Promise(r => setTimeout(r, 1000)); // anti-spam
-                                                    break; // success, break the retry loop
-                                                } else if (res.status === 429) {
-                                                    const data = await res.json();
-                                                    // Telegram returns "parameters":{"retry_after": X}
-                                                    const retryAfter = data.parameters?.retry_after || 30;
-                                                    console.warn(`Telegram API Limit: Waiting ${retryAfter} seconds...`);
-                                                    await new Promise(r => setTimeout(r, (retryAfter + 1) * 1000));
-                                                    retries++;
-                                                } else {
-                                                    console.error("Telegram Error:", await res.text());
-                                                    break; // other error, skip question
+                                        try {
+                                            const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    chat_id: tgChatId.trim(),
+                                                    question: qText,
+                                                    options: optionsListText,
+                                                    type: "quiz",
+                                                    correct_option_id: correctIdx,
+                                                    is_anonymous: true
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                s++;
+                                                setSentQuizCount(s);
+                                            } else {
+                                                const errText = await res.text();
+                                                console.error("Telegram Error:", errText);
+                                                // Agar 429 kelsa, ko'proq kutamiz
+                                                if (res.status === 429) {
+                                                    await new Promise(r => setTimeout(r, 10000));
                                                 }
-                                            } catch (e) {
-                                                console.error(e);
-                                                break;
                                             }
+                                        } catch (e) {
+                                            console.error("Fetch Error:", e);
                                         }
+                                        // Telegram Group Limit: Max 20 msgs per minute. 
+                                        // 60 seconds / 20 messages = 3 seconds per message max speed.
+                                        // We wait 3.2 seconds unconditionally to prevent hitting the limit!
+                                        await new Promise(r => setTimeout(r, 3200));
                                     }
                                     setSendingQuiz(false);
                                     alert(`Muvaffaqiyatli! ${s} ta namunaviy savol quiz shaklida kanalingizga yuborildi.`);
