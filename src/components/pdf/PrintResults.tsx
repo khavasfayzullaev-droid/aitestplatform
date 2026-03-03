@@ -9,7 +9,7 @@ export const PrintResults = React.forwardRef<HTMLDivElement, PrintResultsProps>(
     return (
         <div ref={ref} className="bg-white text-zinc-900 p-10 font-sans" style={{ minHeight: '297mm', width: '210mm', margin: '0 auto', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
             <div className="mb-8">
-                <h1 className="text-3xl font-black mb-6">{testData.title}<br /> Natijalar Qaydnomas (Vedomost)</h1>
+                <h1 className="text-3xl font-black mb-6">{testData.title}<br /> Natijalar Qaydnomasi</h1>
                 <div className="space-y-4 text-sm font-medium text-zinc-800">
                     <p>O'tkazilgan sana: {new Date().toLocaleDateString('uz-UZ')}</p>
                     <p>Jami ishtirokchilar: {submissions.length} kishi</p>
