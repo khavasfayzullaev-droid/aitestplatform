@@ -109,6 +109,11 @@ export default function FolderView() {
     const [deleteTarget, setDeleteTarget] = useState<{ id: string, title: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
 
+    // Folder Rename States
+    const [isEditingFolder, setIsEditingFolder] = useState(false)
+    const [editFolderName, setEditFolderName] = useState("")
+    const [savingFolder, setSavingFolder] = useState(false)
+
     const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
     const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
 
@@ -229,8 +234,41 @@ export default function FolderView() {
 
             <div className="flex justify-between items-end mb-10">
                 <div>
-                    <h1 className="text-4xl font-black text-zinc-900 tracking-tight">{folder.name}</h1>
-                    <p className="text-zinc-500 font-medium mt-2 text-lg">Ichki testlar ro'yxati</p>
+                    <div className="flex items-center gap-3">
+                        {isEditingFolder ? (
+                            <form
+                                onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!editFolderName.trim()) return;
+                                    setSavingFolder(true);
+                                    const { error } = await supabase.from('folders').update({ name: editFolderName }).eq('id', folder.id);
+                                    if (!error) {
+                                        setFolder({ ...folder, name: editFolderName });
+                                        setIsEditingFolder(false);
+                                    } else alert("Xatolik: " + error.message);
+                                    setSavingFolder(false);
+                                }}
+                                className="flex items-center gap-2"
+                            >
+                                <input
+                                    autoFocus
+                                    value={editFolderName}
+                                    onChange={e => setEditFolderName(e.target.value)}
+                                    className="text-4xl font-black text-zinc-900 tracking-tight bg-transparent border-b-2 border-dashed border-zinc-300 focus:border-[#004B49] outline-none px-1 py-1 w-full max-w-[300px] sm:max-w-[400px]"
+                                />
+                                <button type="submit" disabled={savingFolder} className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-[#004B49] text-white hover:bg-[#003B39] transition-colors shadow-md disabled:opacity-50"><CheckCircle2 className="w-6 h-6" /></button>
+                                <button type="button" onClick={() => setIsEditingFolder(false)} className="w-11 h-11 shrink-0 flex items-center justify-center rounded-xl bg-zinc-100 text-zinc-500 hover:bg-zinc-200 transition-colors"><X className="w-6 h-6" /></button>
+                            </form>
+                        ) : (
+                            <>
+                                <h1 className="text-4xl font-black text-zinc-900 tracking-tight">{folder.name}</h1>
+                                <button onClick={() => { setEditFolderName(folder.name); setIsEditingFolder(true) }} className="p-2 text-zinc-400 hover:text-[#004B49] hover:bg-[#004B49]/10 rounded-xl transition-all h-fit" title="Papkani nomini o'zgartirish">
+                                    <Edit2 className="w-6 h-6" />
+                                </button>
+                            </>
+                        )}
+                    </div>
+                    <p className="text-zinc-500 font-medium mt-3 text-lg">Ichki testlar ro'yxati</p>
                 </div>
                 <div className="flex gap-3">
                     <button onClick={() => tests.length > 0 ? handlePrint(tests) : alert("Papka ichida testlar yo'q!")} className="px-6 py-3.5 bg-zinc-900 text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-zinc-900/20 hover:bg-zinc-800 transition-colors">

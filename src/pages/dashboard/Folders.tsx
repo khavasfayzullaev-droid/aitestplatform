@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FolderPlus, Folder, X, Loader2, Trash2 } from 'lucide-react'
+import { FolderPlus, Folder, X, Loader2, Trash2, Edit2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -14,6 +14,9 @@ export default function Folders() {
     const [creating, setCreating] = useState(false)
     const [deleteTarget, setDeleteTarget] = useState<{ id: string, name: string } | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+    const [editTarget, setEditTarget] = useState<{ id: string, name: string } | null>(null)
+    const [editFolderName, setEditFolderName] = useState('')
+    const [isEditing, setIsEditing] = useState(false)
 
     const fetchFolders = async () => {
         setLoading(true)
@@ -75,6 +78,25 @@ export default function Folders() {
         setDeleteTarget({ id, name })
     }
 
+    const handleEditFolderSave = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!editTarget || !editFolderName.trim()) return
+        setIsEditing(true)
+
+        const { error } = await supabase
+            .from('folders')
+            .update({ name: editFolderName })
+            .eq('id', editTarget.id)
+
+        if (!error) {
+            setEditTarget(null)
+            fetchFolders()
+        } else {
+            alert("Xatolik: Nomini o'zgartirish muvaffaqiyatsiz bo'ldi: " + error.message)
+        }
+        setIsEditing(false)
+    }
+
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-full relative">
             <div className="flex justify-between items-end mb-10">
@@ -112,13 +134,26 @@ export default function Folders() {
                             onClick={() => navigate(`/dashboard/folders/${folder.id}`)}
                             className="bg-white p-6 rounded-3xl border border-zinc-100 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[#004B49]/5 transition-all group relative"
                         >
-                            <button
-                                onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
-                                className="absolute top-4 right-4 p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-10"
-                                title="Papkani o'chirish"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
+                            <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditTarget({ id: folder.id, name: folder.name });
+                                        setEditFolderName(folder.name);
+                                    }}
+                                    className="p-2 text-zinc-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                                    title="Papkani tahrirlash"
+                                >
+                                    <Edit2 className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
+                                    className="p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                    title="Papkani o'chirish"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            </div>
                             <div className="w-14 h-14 bg-[#F4F7F6] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#004B49] transition-colors duration-300">
                                 <Folder className="w-7 h-7 text-[#004B49] group-hover:text-white transition-colors duration-300" />
                             </div>
@@ -172,6 +207,55 @@ export default function Folders() {
                                     className="w-full py-4 rounded-xl bg-[#004B49] text-white font-bold text-lg hover:bg-[#003B39] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {creating ? <Loader2 className="w-5 h-5 animate-spin" /> : "Yaratish"}
+                                </button>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Rename Folder Modal */}
+            <AnimatePresence>
+                {editTarget && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+                            onClick={() => setEditTarget(null)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-[32px] p-8 w-full max-w-md relative z-10 shadow-2xl"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-2xl font-bold text-zinc-900">Papkani tahrirlash</h2>
+                                <button onClick={() => setEditTarget(null)} className="p-2 text-zinc-400 hover:bg-zinc-100 rounded-full transition-colors">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleEditFolderSave}>
+                                <div className="mb-6">
+                                    <label className="block text-sm font-semibold text-zinc-700 mb-2">Yangi nom</label>
+                                    <input
+                                        type="text"
+                                        value={editFolderName}
+                                        onChange={(e) => setEditFolderName(e.target.value)}
+                                        autoFocus
+                                        className="w-full px-5 py-4 bg-zinc-50 border border-zinc-200 rounded-2xl outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all font-medium text-lg"
+                                    />
+                                </div>
+
+                                <button
+                                    disabled={isEditing || !editFolderName.trim()}
+                                    type="submit"
+                                    className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    {isEditing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Saqlash"}
                                 </button>
                             </form>
                         </motion.div>
