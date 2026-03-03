@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FolderPlus, Folder, X, Loader2 } from 'lucide-react'
+import { FolderPlus, Folder, X, Loader2, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
@@ -54,6 +54,18 @@ export default function Folders() {
         setCreating(false)
     }
 
+    const handleDeleteFolder = async (e: React.MouseEvent, id: string, name: string) => {
+        e.stopPropagation()
+        if (!confirm(`Haqiqatan ham "${name}" papkasini va uning ichidagi BARCHA testlarni o'chirib yubormoqchimisiz?`)) return
+
+        const { error } = await supabase.from('folders').delete().eq('id', id)
+        if (!error) {
+            fetchFolders()
+        } else {
+            alert("Xatolik: O'chirish ruxsati yo'q yeki baza bilan muammo: " + error.message)
+        }
+    }
+
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-full relative">
             <div className="flex justify-between items-end mb-10">
@@ -89,8 +101,15 @@ export default function Folders() {
                             whileHover={{ y: -4 }}
                             key={folder.id}
                             onClick={() => navigate(`/dashboard/folders/${folder.id}`)}
-                            className="bg-white p-6 rounded-3xl border border-zinc-100 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[#004B49]/5 transition-all group"
+                            className="bg-white p-6 rounded-3xl border border-zinc-100 cursor-pointer shadow-sm hover:shadow-xl hover:shadow-[#004B49]/5 transition-all group relative"
                         >
+                            <button
+                                onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
+                                className="absolute top-4 right-4 p-2 text-zinc-300 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all z-10"
+                                title="Papkani o'chirish"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
                             <div className="w-14 h-14 bg-[#F4F7F6] rounded-xl flex items-center justify-center mb-4 group-hover:bg-[#004B49] transition-colors duration-300">
                                 <Folder className="w-7 h-7 text-[#004B49] group-hover:text-white transition-colors duration-300" />
                             </div>
