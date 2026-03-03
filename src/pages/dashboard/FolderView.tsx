@@ -243,50 +243,51 @@ export default function FolderView() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tests.map(test => (
-                    <motion.div whileHover={{ y: -4 }} key={test.id} className="bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm hover:shadow-xl transition-all flex flex-col group">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className="w-14 h-14 bg-[#EEF2F1] group-hover:bg-[#004B49] rounded-xl flex items-center justify-center transition-colors">
-                                <FileText className="w-7 h-7 text-[#004B49] group-hover:text-white" />
+                    <motion.div whileHover={{ y: -4 }} key={test.id} className="bg-white p-6 rounded-[32px] shadow-sm shadow-slate-200/50 hover:shadow-xl transition-all flex flex-col group border-2 border-transparent hover:border-slate-100">
+                        <div className="flex justify-between items-start mb-5">
+                            <div className="w-16 h-16 bg-[#F3F4F6] rounded-[20px] flex items-center justify-center transition-colors">
+                                <FileText className="w-8 h-8 text-[#115E59]" />
                             </div>
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 handlePrint([test]);
-                            }} className="w-10 h-10 bg-zinc-100 text-zinc-600 hover:text-white hover:bg-zinc-900 rounded-xl rounded-bl-3xl flex items-center justify-center transition-colors shadow-sm" title="Joriy Testni PDF qilish">
-                                <Printer className="w-4 h-4" />
+                            }} className="w-12 h-12 bg-[#F9FAFB] text-slate-500 hover:text-[#115E59] hover:bg-slate-100 rounded-[18px] flex items-center justify-center transition-colors shadow-sm" title="Joriy Testni PDF qilish">
+                                <Printer className="w-5 h-5" />
                             </button>
                         </div>
-                        <h3 className="text-2xl font-black text-zinc-900 line-clamp-1">{test.title}</h3>
-                        <p className="text-sm font-bold text-zinc-400 mb-4">{test.questions?.length || 0} ta tayyor savollar</p>
+                        <h3 className="text-[26px] font-bold text-slate-800 line-clamp-1 leading-tight tracking-tight mb-1">{test.title}</h3>
+                        <p className="text-[15px] font-bold text-slate-400 mb-5">{test.questions?.length || 0} ta tayyor savollar</p>
 
                         <div className="flex flex-col gap-2 mb-6">
                             {test.settings?.description && (
-                                <p className="text-sm font-medium text-zinc-500 line-clamp-2 leading-relaxed">
+                                <p className="text-sm font-medium text-slate-500 line-clamp-2 leading-relaxed">
                                     {test.settings.description}
                                 </p>
                             )}
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                                <span className="text-[11px] font-bold text-zinc-400 bg-zinc-100/80 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-                                    <Calendar className="w-3.5 h-3.5" />
+                                <span className="text-[13px] font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-[12px] flex items-center gap-1.5">
+                                    <Calendar className="w-4 h-4" />
                                     {new Date(test.created_at || Date.now()).toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '')}
                                 </span>
                                 {test.settings?.timeLimit && (
-                                    <span className="text-[11px] font-bold text-orange-500 bg-orange-50 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-                                        <Clock className="w-3.5 h-3.5" /> {test.settings.timeLimit} daq
+                                    <span className="text-[13px] font-bold text-orange-500 bg-orange-50 px-3 py-1.5 rounded-[12px] flex items-center gap-1.5">
+                                        <Clock className="w-4 h-4" /> {test.settings.timeLimit} daq
                                     </span>
                                 )}
                                 {test.settings?.interactiveMode && (
-                                    <span className="text-[11px] font-bold text-blue-500 bg-blue-50 px-2.5 py-1.5 rounded-lg">
+                                    <span className="text-[13px] font-bold text-blue-500 bg-blue-50 px-3 py-1.5 rounded-[12px]">
                                         ⚡️ Interaktiv
                                     </span>
                                 )}
                             </div>
                         </div>
-                        <div className="mt-auto flex gap-2 w-full border-t border-zinc-100 pt-5">
+
+                        <div className="mt-auto flex flex-wrap xl:flex-nowrap gap-2 w-full border-t border-slate-100 pt-5">
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/dashboard/test/${test.id}/results`);
-                            }} className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-bold py-3 hover:bg-blue-100 rounded-xl transition-colors shrink-0" title="O'quvchilar natijalari">
-                                <BarChart2 className="w-4 h-4" /> Natijalar
+                            }} className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 bg-[#EFF6FF] text-[#3B82F6] font-bold py-3.5 hover:bg-[#DBEAFE] rounded-[18px] transition-colors shrink-0" title="O'quvchilar natijalari">
+                                <BarChart2 className="w-4 h-4 text-[#3B82F6]" /> <span className="truncate">Natijalar</span>
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
@@ -294,25 +295,25 @@ export default function FolderView() {
                                 navigator.clipboard.writeText(link);
                                 setCopiedId(test.id);
                                 setTimeout(() => setCopiedId(null), 2000);
-                            }} className={`flex-1 flex items-center justify-center gap-1.5 font-bold py-3 rounded-xl transition-colors shrink-0 ${copiedId === test.id ? 'bg-[#31C48D] text-white hover:bg-[#31C48D]' : 'bg-[#004B49]/5 text-[#004B49] hover:bg-[#004B49]/10'}`}>
-                                {copiedId === test.id ? <><CheckCircle2 className="w-4 h-4" /> Olindi</> : <><Link2 className="w-4 h-4" /> Havola</>}
+                            }} className={`flex-1 min-w-[90px] flex items-center justify-center gap-1.5 font-bold py-3.5 rounded-[18px] transition-colors shrink-0 ${copiedId === test.id ? 'bg-[#10B981] text-white hover:bg-[#059669]' : 'bg-[#F3F4F6] text-[#0F172A] hover:bg-[#E5E7EB]'}`}>
+                                {copiedId === test.id ? <><CheckCircle2 className="w-4 h-4" /> Olindi</> : <><Link2 className="w-4 h-4" /> <span className="truncate">Havola</span></>}
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 setQuizTarget(test);
-                            }} className="w-12 lg:w-14 items-center justify-center bg-blue-50 text-blue-500 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-colors flex shrink-0" title="Viktorinani Telegramga yuborish">
+                            }} className="w-[52px] h-[52px] items-center justify-center bg-[#EFF6FF] text-[#3B82F6] hover:bg-[#DBEAFE] rounded-[18px] transition-colors flex shrink-0" title="Viktorinani Telegramga yuborish">
                                 <Send className="w-5 h-5" />
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenEdit(test);
-                            }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 rounded-xl transition-colors" title="Testni Tahrirlash/Ko'rish">
+                            }} className="w-[52px] h-[52px] flex shrink-0 items-center justify-center bg-[#FFF7ED] text-[#F97316] hover:bg-[#FFEDD5] rounded-[18px] transition-colors" title="Testni Tahrirlash/Ko'rish">
                                 <Edit2 className="w-5 h-5" />
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 setDeleteTarget({ id: test.id, title: test.title });
-                            }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-red-50 text-red-500 hover:text-red-600 hover:bg-red-100 rounded-xl transition-colors" title="Testni O'chirish">
+                            }} className="w-[52px] h-[52px] flex shrink-0 items-center justify-center bg-[#FEF2F2] text-[#EF4444] hover:bg-[#FEE2E2] rounded-[18px] transition-colors" title="Testni O'chirish">
                                 <Trash2 className="w-5 h-5" />
                             </button>
                         </div>
