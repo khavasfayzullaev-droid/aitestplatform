@@ -167,82 +167,98 @@ export default function TestPlayer() {
     }
 
     if (step === 'result' && result) {
+        const percent = Math.round((result.score / (result.total || 1)) * 100);
+
         return (
-            <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center p-4 font-sans">
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-8 sm:p-12 rounded-[40px] shadow-[0_10px_40px_rgba(0,0,0,0.06)] w-full max-w-xl border border-zinc-100 text-center relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-r from-emerald-400 to-[#31C48D]" />
-                    <div className="w-32 h-32 bg-[#31C48D]/10 rounded-full flex items-center justify-center mx-auto mb-8 border-[8px] border-white shadow-xl relative z-10">
-                        <CheckCircle2 className="w-16 h-16 text-[#31C48D]" />
+            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center py-10 px-4 font-sans">
+                {/* Top Success Card */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-8 sm:p-10 rounded-[32px] shadow-sm w-full max-w-2xl border border-slate-100 text-center mb-10">
+                    <div className="w-20 h-20 rounded-full border-[3px] border-[#31C48D] flex items-center justify-center mx-auto mb-6">
+                        <CheckCircle2 className="w-10 h-10 text-[#31C48D]" />
                     </div>
-                    <h1 className="text-4xl font-black text-zinc-900 mb-2">Imtihon Yakunlandi!</h1>
-                    <p className="text-xl font-medium text-zinc-500 mb-10">Urra, {studentName} javoblaringiz qabul qilindi.</p>
+                    <h1 className="text-3xl sm:text-4xl font-black text-[#1E293B] mb-2 tracking-tight">Test Yakunlandi!</h1>
+                    <p className="text-[15px] font-medium text-slate-500 mb-8 tracking-wide">Natijangiz ustozingizga yuborildi.</p>
 
-                    <div className="bg-[#FBFBFA] p-8 rounded-[32px] border border-zinc-100 flex flex-col sm:flex-row justify-center gap-8 sm:gap-12 inset-shadow">
-                        <div>
-                            <p className="text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wide">Jami Savollar</p>
-                            <h2 className="text-5xl font-black text-zinc-800">{result.total}</h2>
-                        </div>
-                        <div className="hidden sm:block w-px bg-zinc-200"></div>
-                        <div className="block sm:hidden h-px bg-zinc-200 w-full"></div>
-                        <div>
-                            <p className="text-sm font-bold text-zinc-400 mb-2 uppercase tracking-wide">To'g'ri Javoblar</p>
-                            <h2 className="text-5xl font-black text-[#31C48D] drop-shadow-sm">{result.score}</h2>
-                        </div>
+                    <div className="bg-slate-50/50 rounded-3xl py-12 px-8 mb-8">
+                        <h2 className="text-7xl sm:text-[80px] font-black text-[#508DF8] tracking-tighter mb-4">{percent}%</h2>
+                        <p className="text-lg font-medium text-slate-700">{result.score} ta to'g'ri (Jami {result.total} ta)</p>
                     </div>
 
-                    {result.details && result.details.length > 0 && (
-                        <div className="mt-10 text-left border-t border-zinc-100 pt-8">
-                            <h3 className="font-black text-xl text-zinc-900 mb-6 flex items-center gap-2">Sizning Javoblaringiz Tahlili</h3>
-                            <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-                                {testData.questions.map((q: any, i: number) => {
-                                    const detail = result.details.find((d: any) => d.id === q.id)
-                                    if (!detail) return null;
-
-                                    const isCorrect = detail.correct;
-                                    const studentOption = q.options.find((opt: any) => opt.label === detail.studentAnswer);
-                                    const correctOption = q.options.find((opt: any) => opt.label === detail.correctAnswer);
-
-                                    return (
-                                        <div key={q.id} className={`p-5 rounded-2xl border ${isCorrect ? 'bg-[#31C48D]/5 border-[#31C48D]/20' : 'bg-red-50/50 border-red-100'}`}>
-                                            <p className="font-bold text-zinc-900 mb-4 whitespace-pre-wrap"><span className="text-zinc-400 mr-2">{i + 1}.</span>{q.question}</p>
-
-                                            <div className="space-y-3">
-                                                {/* Show all options, highlight correct and selected ones */}
-                                                {q.options.map((opt: any) => {
-                                                    const isSelected = opt.label === detail.studentAnswer;
-                                                    const isActuallyCorrect = opt.label === detail.correctAnswer;
-
-                                                    let optionClass = "border-zinc-100 bg-white text-zinc-600";
-                                                    let Icon = null;
-
-                                                    if (isActuallyCorrect) {
-                                                        optionClass = "border-[#31C48D] bg-[#31C48D]/10 text-[#004B49]";
-                                                        Icon = <CheckCircle2 className="w-5 h-5 text-[#31C48D]" />;
-                                                    } else if (isSelected && !isActuallyCorrect) {
-                                                        optionClass = "border-red-300 bg-red-50 text-red-700";
-                                                        Icon = <XCircle className="w-5 h-5 text-red-500" />;
-                                                    }
-
-                                                    return (
-                                                        <div key={opt.id} className={`flex items-center justify-between p-3 rounded-xl border-2 ${optionClass}`}>
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="font-black text-xs uppercase opacity-50">{opt.label})</span>
-                                                                <span className="font-bold text-sm sm:text-base">{opt.text}</span>
-                                                            </div>
-                                                            {Icon}
-                                                        </div>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                    )}
-
-                    <button onClick={() => window.location.reload()} className="mt-10 px-8 py-5 w-full rounded-2xl bg-zinc-900 text-white font-black text-xl hover:bg-black hover:-translate-y-1 shadow-xl shadow-black/10 transition-all">Yopish va Chiqish</button>
+                    <div className="bg-[#F3F4F6] rounded-[20px] p-6 text-[15px] font-medium text-slate-600 leading-relaxed text-center">
+                        Test yakunlandi. Agar natijalarni ko'rib bo'lgan bo'lsangiz,<br/> ushbu sahifani yopishingiz mumkin.
+                    </div>
                 </motion.div>
+
+                {/* Analysis Section */}
+                {result.details && result.details.length > 0 && (
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="w-full max-w-2xl">
+                        <div className="mb-8 flex justify-center">
+                            <h3 className="text-2xl font-black text-[#1E293B] flex items-center gap-2">
+                                <span className="bg-[#FBCFE8] px-3 py-1 rounded-md text-[#1E293B]">Javoblar</span> Tahlili
+                            </h3>
+                        </div>
+
+                        <div className="space-y-6">
+                            {testData.questions.map((q: any, i: number) => {
+                                const detail = result.details.find((d: any) => d.id === q.id)
+                                if (!detail) return null;
+
+                                const isCorrect = detail.correct;
+
+                                return (
+                                    <div key={q.id} className="bg-white rounded-[24px] p-6 sm:p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+                                        <div className="flex items-start gap-2 mb-6">
+                                            <div className="mt-1 shrink-0">
+                                                {isCorrect ? (
+                                                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[#31C48D]"><CheckCircle2 className="w-5 h-5" /></div>
+                                                ) : (
+                                                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[#F43F5E]"><XCircle className="w-5 h-5" /></div>
+                                                )}
+                                            </div>
+                                            <p className="font-bold text-lg text-[#1E293B] leading-relaxed whitespace-pre-wrap">
+                                                <span className="font-black mr-1">{i + 1}.</span>{q.question}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {q.options.map((opt: any) => {
+                                                const isSelected = opt.label === detail.studentAnswer;
+                                                const isActuallyCorrect = opt.label === detail.correctAnswer;
+                                                
+                                                let containerClasses = "border-slate-200 bg-white text-slate-600";
+                                                let circleClasses = "border-slate-200 border-[2px]";
+                                                let textClasses = "font-medium";
+                                                let badge = null;
+
+                                                if (isActuallyCorrect) {
+                                                    containerClasses = "border-[#31C48D] bg-[#ECFDF5]";
+                                                    circleClasses = isSelected ? "border-[#31C48D] border-[6px]" : "border-[#31C48D] border-[2px]";
+                                                    textClasses = "font-bold text-[#059669]";
+                                                    badge = <span className="bg-[#10B981] text-white text-[12px] font-bold px-3 py-1 rounded-full">To'g'ri javob</span>;
+                                                } else if (isSelected && !isActuallyCorrect) {
+                                                    containerClasses = "border-[#FDA4AF] bg-[#FFF1F2]";
+                                                    circleClasses = "border-[#FB7185] border-[6px]";
+                                                    textClasses = "font-medium text-[#F43F5E]";
+                                                    badge = <span className="bg-[#FB7185] text-white text-[12px] font-bold px-3 py-1 rounded-full">Sizning javobingiz</span>;
+                                                }
+
+                                                return (
+                                                    <div key={opt.id} className={`flex items-center justify-between p-4 rounded-xl border ${containerClasses}`}>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-[22px] h-[22px] rounded-full shrink-0 ${circleClasses}`} />
+                                                            <span className={`text-[15px] sm:text-base ${textClasses}`}>{opt.text}</span>
+                                                        </div>
+                                                        {badge}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </motion.div>
+                )}
             </div>
         )
     }
