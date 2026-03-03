@@ -51,9 +51,6 @@ export const PrintTest = React.forwardRef<HTMLDivElement, PrintTestProps>(({ tes
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-20 border-t-2 border-black pt-4 text-center font-bold italic text-lg text-zinc-500">
-                                AI Test CRM platformasida yig'ildi. Ishonchli va Himoyalangan!
-                            </div>
                         </div>
                     )}
                 </div>
