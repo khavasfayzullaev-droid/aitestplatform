@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer, Send, AlertCircle } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
 import { useReactToPrint } from 'react-to-print'
 import { useRef } from 'react'
@@ -111,6 +111,13 @@ export default function FolderView() {
 
     const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
     const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
+
+    // Telegram Quiz state
+    const [quizTarget, setQuizTarget] = useState<any>(null);
+    const [tgBotToken, setTgBotToken] = useState(() => localStorage.getItem('tg_bot_token') || '');
+    const [tgChatId, setTgChatId] = useState(() => localStorage.getItem('tg_chat_id') || '');
+    const [sendingQuiz, setSendingQuiz] = useState(false);
+    const [sentQuizCount, setSentQuizCount] = useState(0);
 
     // PDF Printing states
     const printRef = useRef<HTMLDivElement>(null)
@@ -292,6 +299,12 @@ export default function FolderView() {
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
+                                setQuizTarget(test);
+                            }} className="w-12 lg:w-14 items-center justify-center bg-blue-50 text-blue-500 hover:text-blue-600 hover:bg-blue-100 rounded-xl transition-colors flex shrink-0" title="Viktorinani Telegramga yuborish">
+                                <Send className="w-5 h-5" />
+                            </button>
+                            <button onClick={(e) => {
+                                e.stopPropagation();
                                 handleOpenEdit(test);
                             }} className="w-12 lg:w-14 flex shrink-0 items-center justify-center bg-orange-50 text-orange-500 hover:text-orange-600 hover:bg-orange-100 rounded-xl transition-colors" title="Testni Tahrirlash/Ko'rish">
                                 <Edit2 className="w-5 h-5" />
@@ -435,6 +448,108 @@ export default function FolderView() {
                 message={`Haqiqatan ham "${deleteTarget?.title}" nomli ushbu testni o'chirasizmi? Uning ichidagi BARCHA bog'langan natijalar, savollar o'chib ketadi!`}
                 confirmText="Ha, o'chib ketsin"
             />
+
+            {/* Telegram Quiz Modal */}
+            <AnimatePresence>
+                {quizTarget && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => !sendingQuiz && setQuizTarget(null)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} className="bg-white rounded-[24px] w-full max-w-lg relative z-10 shadow-2xl flex flex-col overflow-hidden">
+                            <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <Send className="w-5 h-5 text-blue-500" /> Telegramga Haqiqiy Viktorina
+                                </h2>
+                                <button onClick={() => !sendingQuiz && setQuizTarget(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-full transition-colors"><X className="w-6 h-6" /></button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto">
+                                <div className="bg-[#F0F7FF] rounded-xl p-4 flex items-start gap-4 mb-6 border border-blue-100">
+                                    <AlertCircle className="w-6 h-6 text-[#3B82F6] shrink-0 mt-0.5" />
+                                    <p className="text-[14.5px] text-slate-700 leading-relaxed font-medium">Tasvir bo'yicha haqiqiy viktorinalar chiqarish uchun bot kerak. BotFather orqali bot oching. <b>Token</b> ni yozing va botni o'zingizning kanalingizga admin qiling.</p>
+                                </div>
+
+                                <div className="space-y-5">
+                                    <div>
+                                        <label className="block text-[15px] font-semibold text-slate-700 mb-2">Bot Tokeni (BotFather olingan)</label>
+                                        <input type="text" value={tgBotToken} onChange={e => setTgBotToken(e.target.value)} className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 transition-all shadow-sm" placeholder="8575858589:AA..." />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[15px] font-semibold text-slate-700 mb-2">Kanal yoki Guruh manzili / ID si</label>
+                                        <input type="text" value={tgChatId} onChange={e => setTgChatId(e.target.value)} className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 transition-all shadow-sm" placeholder="@testlar_kanalim" />
+                                    </div>
+                                    <div className="flex justify-end pt-2">
+                                        <button className="text-sm font-medium text-slate-500 hover:text-slate-700">Sozlamalarni yashirish</button>
+                                    </div>
+                                </div>
+
+                                {sendingQuiz && (
+                                    <div className="mt-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100 flex flex-col items-center justify-center">
+                                        <Loader2 className="w-8 h-8 animate-spin text-blue-500 mb-3" />
+                                        <p className="text-blue-700 font-bold text-lg">{sentQuizCount} / {quizTarget.questions?.length || 0}</p>
+                                        <p className="text-blue-500/80 text-sm font-medium mt-1">Savollar telegramga yuborilmoqda...</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex justify-end gap-3 rounded-b-[24px]">
+                                <button onClick={() => setQuizTarget(null)} disabled={sendingQuiz} className="px-6 py-2.5 rounded-[12px] border border-slate-200 bg-white font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 hover:shadow-sm">Bekor qilish</button>
+                                <button onClick={async () => {
+                                    if (!tgBotToken || !tgChatId) return alert("Iltimos, Token va Kanal manzilini kiriting.");
+                                    if (!quizTarget.questions || quizTarget.questions.length === 0) return alert("Ushbu testda hecham savollar yo'q.");
+
+                                    localStorage.setItem('tg_bot_token', tgBotToken.trim());
+                                    localStorage.setItem('tg_chat_id', tgChatId.trim());
+
+                                    setSendingQuiz(true);
+                                    setSentQuizCount(0);
+                                    let s = 0;
+
+                                    for (let i = 0; i < quizTarget.questions.length; i++) {
+                                        const q = quizTarget.questions[i];
+                                        // fetch valid non-empty options and shorten them to 100 chars (Telegram max)
+                                        const validOpts = q.options.filter((o: any) => o.text && String(o.text).trim() !== "");
+                                        const optionsListText = validOpts.map((o: any) => String(o.text).substring(0, 100));
+
+                                        // minimum 2 options for a poll in TG
+                                        if (optionsListText.length < 2) continue;
+
+                                        const correctIdx = validOpts.findIndex((o: any) => o.label === q.correctAnswer);
+                                        // Telegram quiz REQUIRES a correct answer
+                                        if (correctIdx === -1) continue;
+
+                                        const qText = `${i + 1}. ${q.question}`.substring(0, 300);
+
+                                        try {
+                                            const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                    chat_id: tgChatId.trim(),
+                                                    question: qText,
+                                                    options: optionsListText,
+                                                    type: "quiz",
+                                                    correct_option_id: correctIdx,
+                                                    is_anonymous: true
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                s++;
+                                                setSentQuizCount(s);
+                                            }
+                                            await new Promise(r => setTimeout(r, 800)); // anti-spam
+                                        } catch (e) { console.error(e); }
+                                    }
+                                    setSendingQuiz(false);
+                                    alert(`Muvaffaqiyatli! ${s} ta namunaviy savol quiz shaklida kanalingizga yuborildi.`);
+                                    setQuizTarget(null);
+                                }} disabled={sendingQuiz || !tgBotToken || !tgChatId} className="px-8 py-2.5 rounded-[12px] bg-[#3B82F6] text-white font-bold hover:bg-[#2563EB] shadow-md shadow-[#3B82F6]/20 disabled:opacity-50 transition-all hover:scale-105 active:scale-95">
+                                    {sendingQuiz ? 'Yuborilmoqda...' : 'Yuborish'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Hidden Print Wrapper */}
             <div style={{ display: 'none' }}>
