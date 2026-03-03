@@ -87,7 +87,7 @@ export default function AuthPage() {
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {!isLogin && (
                             <div>
-                                <label className="block text-sm font-bold text-zinc-700 mb-1.5 ml-1">FIshingiz</label>
+                                <label className="block text-sm font-bold text-zinc-700 mb-1.5 ml-1">Ismingiz</label>
                                 <input
                                     type="text"
                                     value={fullName}
