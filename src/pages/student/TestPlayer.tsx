@@ -56,7 +56,19 @@ export default function TestPlayer() {
 
     const handleSubmit = async () => {
         setLoading(true)
-        const { data, error } = await supabase.rpc('submit_test', { p_test_id: id, p_student: studentName, p_answers: answers })
+
+        let fp = localStorage.getItem('student_fp')
+        if (!fp) {
+            fp = Math.random().toString(36).substring(2, 15) + Date.now().toString(36)
+            localStorage.setItem('student_fp', fp)
+        }
+
+        const { data, error } = await supabase.rpc('submit_test', {
+            p_test_id: id,
+            p_student: studentName,
+            p_answers: answers,
+            p_student_fingerprint: fp
+        })
         if (error) {
             alert("Natijani yuklashda xizmat xatosi: " + error.message)
         } else {
