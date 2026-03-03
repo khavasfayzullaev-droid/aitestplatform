@@ -199,27 +199,40 @@ export default function TestPlayer() {
                                     if (!detail) return null;
 
                                     const isCorrect = detail.correct;
+                                    const studentOption = q.options.find((opt: any) => opt.label === detail.studentAnswer);
+                                    const correctOption = q.options.find((opt: any) => opt.label === detail.correctAnswer);
+
                                     return (
                                         <div key={q.id} className={`p-5 rounded-2xl border ${isCorrect ? 'bg-[#31C48D]/5 border-[#31C48D]/20' : 'bg-red-50/50 border-red-100'}`}>
-                                            <p className="font-bold text-zinc-900 mb-3"><span className="text-zinc-400 mr-2">{i + 1}.</span>{q.question}</p>
-                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-zinc-500 uppercase text-xs">Sizning javob:</span>
-                                                    <span className={`font-black px-3 py-1 rounded-lg flex items-center gap-1 ${isCorrect ? 'bg-[#31C48D] text-white' : 'bg-red-500 text-white'}`}>
-                                                        {isCorrect ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                                        {detail.studentAnswer || 'bosh'}
-                                                    </span>
-                                                </div>
-                                                {!isCorrect && detail.correctAnswer && (
-                                                    <div className="flex items-center gap-2">
-                                                        <ArrowRight className="w-4 h-4 text-zinc-300 hidden sm:block" />
-                                                        <span className="font-bold text-zinc-500 uppercase text-xs">To'g'ri javob:</span>
-                                                        <span className="font-black px-3 py-1 bg-[#31C48D] text-white rounded-lg flex items-center gap-1">
-                                                            <CheckCircle2 className="w-4 h-4" />
-                                                            {detail.correctAnswer}
-                                                        </span>
-                                                    </div>
-                                                )}
+                                            <p className="font-bold text-zinc-900 mb-4 whitespace-pre-wrap"><span className="text-zinc-400 mr-2">{i + 1}.</span>{q.question}</p>
+
+                                            <div className="space-y-3">
+                                                {/* Show all options, highlight correct and selected ones */}
+                                                {q.options.map((opt: any) => {
+                                                    const isSelected = opt.label === detail.studentAnswer;
+                                                    const isActuallyCorrect = opt.label === detail.correctAnswer;
+
+                                                    let optionClass = "border-zinc-100 bg-white text-zinc-600";
+                                                    let Icon = null;
+
+                                                    if (isActuallyCorrect) {
+                                                        optionClass = "border-[#31C48D] bg-[#31C48D]/10 text-[#004B49]";
+                                                        Icon = <CheckCircle2 className="w-5 h-5 text-[#31C48D]" />;
+                                                    } else if (isSelected && !isActuallyCorrect) {
+                                                        optionClass = "border-red-300 bg-red-50 text-red-700";
+                                                        Icon = <XCircle className="w-5 h-5 text-red-500" />;
+                                                    }
+
+                                                    return (
+                                                        <div key={opt.id} className={`flex items-center justify-between p-3 rounded-xl border-2 ${optionClass}`}>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="font-black text-xs uppercase opacity-50">{opt.label})</span>
+                                                                <span className="font-bold text-sm sm:text-base">{opt.text}</span>
+                                                            </div>
+                                                            {Icon}
+                                                        </div>
+                                                    )
+                                                })}
                                             </div>
                                         </div>
                                     )
