@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion } from 'framer-motion'
-import { User, Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { User, Clock, CheckCircle2, AlertCircle, Loader2, XCircle, ArrowRight } from 'lucide-react'
 
 export default function TestPlayer() {
     const { id } = useParams()
@@ -190,10 +190,41 @@ export default function TestPlayer() {
                         </div>
                     </div>
 
-                    {result.details && (
-                        <div className="mt-8 bg-blue-50/50 border border-blue-100 text-blue-800 p-6 rounded-3xl font-semibold flex items-start gap-4 text-left shadow-inner">
-                            <AlertCircle className="w-7 h-7 shrink-0 text-blue-500" />
-                            <p className="leading-relaxed">Sizning natijalaringiz ustozlar xonasiga (leaderboard) saqlandi. Har bir xatoingiz tahlil qilinadi.</p>
+                    {result.details && result.details.length > 0 && (
+                        <div className="mt-10 text-left border-t border-zinc-100 pt-8">
+                            <h3 className="font-black text-xl text-zinc-900 mb-6 flex items-center gap-2">Sizning Javoblaringiz Tahlili</h3>
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                                {testData.questions.map((q: any, i: number) => {
+                                    const detail = result.details.find((d: any) => d.id === q.id)
+                                    if (!detail) return null;
+
+                                    const isCorrect = detail.correct;
+                                    return (
+                                        <div key={q.id} className={`p-5 rounded-2xl border ${isCorrect ? 'bg-[#31C48D]/5 border-[#31C48D]/20' : 'bg-red-50/50 border-red-100'}`}>
+                                            <p className="font-bold text-zinc-900 mb-3"><span className="text-zinc-400 mr-2">{i + 1}.</span>{q.question}</p>
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-bold text-zinc-500 uppercase text-xs">Sizning javob:</span>
+                                                    <span className={`font-black px-3 py-1 rounded-lg flex items-center gap-1 ${isCorrect ? 'bg-[#31C48D] text-white' : 'bg-red-500 text-white'}`}>
+                                                        {isCorrect ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                                        {detail.studentAnswer || 'bosh'}
+                                                    </span>
+                                                </div>
+                                                {!isCorrect && detail.correctAnswer && (
+                                                    <div className="flex items-center gap-2">
+                                                        <ArrowRight className="w-4 h-4 text-zinc-300 hidden sm:block" />
+                                                        <span className="font-bold text-zinc-500 uppercase text-xs">To'g'ri javob:</span>
+                                                        <span className="font-black px-3 py-1 bg-[#31C48D] text-white rounded-lg flex items-center gap-1">
+                                                            <CheckCircle2 className="w-4 h-4" />
+                                                            {detail.correctAnswer}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
                         </div>
                     )}
 
