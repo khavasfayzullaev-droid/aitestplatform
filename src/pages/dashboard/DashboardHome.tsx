@@ -36,9 +36,9 @@ export default function DashboardHome() {
                 <div className="w-24 h-24 bg-[#004B49]/5 rounded-full mx-auto flex items-center justify-center mb-6">
                     <FileText className="w-10 h-10 text-[#004B49]" />
                 </div>
-                <h2 className="text-2xl font-bold text-zinc-900 mb-3">Hali testlar shakllantirilmadi</h2>
+                <h2 className="text-2xl font-bold text-zinc-900 mb-3">Hali hech qanday test qo'shilmagan.</h2>
                 <p className="text-zinc-500 font-medium max-w-md mx-auto mb-8 text-lg">
-                    Birinchi papkani yarating va matnli testlaringizni aqlli tizimga "parse" qilish uchun yuklang. Ajoyib sehrni o'z ko'zingiz bilan ko'rasiz!
+                    Ishni boshlash uchun papka yarating va testlaringizni joylang. Qolgan barcha ishni aqlli tizimimiz soniyalarda bajaradi.
                 </p>
                 <Link to="/dashboard/folders" className="px-8 py-4 bg-[#004B49] text-white rounded-2xl font-bold text-lg hover:bg-[#003B39] transition-all shadow-xl shadow-[#004B49]/20">
                     Papkalar bo'limiga o'tish
