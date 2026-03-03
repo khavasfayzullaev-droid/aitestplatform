@@ -522,25 +522,42 @@ export default function FolderView() {
 
                                         const qText = `${i + 1}. ${q.question}`.substring(0, 300);
 
-                                        try {
-                                            const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
-                                                method: 'POST',
-                                                headers: { 'Content-Type': 'application/json' },
-                                                body: JSON.stringify({
-                                                    chat_id: tgChatId.trim(),
-                                                    question: qText,
-                                                    options: optionsListText,
-                                                    type: "quiz",
-                                                    correct_option_id: correctIdx,
-                                                    is_anonymous: true
-                                                })
-                                            });
-                                            if (res.ok) {
-                                                s++;
-                                                setSentQuizCount(s);
+                                        let retries = 0;
+                                        while (retries < 5) {
+                                            try {
+                                                const res = await fetch(`https://api.telegram.org/bot${tgBotToken.trim()}/sendPoll`, {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        chat_id: tgChatId.trim(),
+                                                        question: qText,
+                                                        options: optionsListText,
+                                                        type: "quiz",
+                                                        correct_option_id: correctIdx,
+                                                        is_anonymous: true
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    s++;
+                                                    setSentQuizCount(s);
+                                                    await new Promise(r => setTimeout(r, 1000)); // anti-spam
+                                                    break; // success, break the retry loop
+                                                } else if (res.status === 429) {
+                                                    const data = await res.json();
+                                                    // Telegram returns "parameters":{"retry_after": X}
+                                                    const retryAfter = data.parameters?.retry_after || 30;
+                                                    console.warn(`Telegram API Limit: Waiting ${retryAfter} seconds...`);
+                                                    await new Promise(r => setTimeout(r, (retryAfter + 1) * 1000));
+                                                    retries++;
+                                                } else {
+                                                    console.error("Telegram Error:", await res.text());
+                                                    break; // other error, skip question
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                                break;
                                             }
-                                            await new Promise(r => setTimeout(r, 800)); // anti-spam
-                                        } catch (e) { console.error(e); }
+                                        }
                                     }
                                     setSendingQuiz(false);
                                     alert(`Muvaffaqiyatli! ${s} ta namunaviy savol quiz shaklida kanalingizga yuborildi.`);
