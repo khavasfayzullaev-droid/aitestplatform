@@ -244,16 +244,30 @@ export default function FolderView() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tests.map(test => (
                     <motion.div whileHover={{ y: -4 }} key={test.id} className="bg-white p-6 rounded-[32px] shadow-sm shadow-slate-200/50 hover:shadow-xl transition-all flex flex-col group border-2 border-transparent hover:border-slate-100">
-                        <div className="flex justify-between items-start mb-5">
-                            <div className="w-16 h-16 bg-[#F3F4F6] rounded-[20px] flex items-center justify-center transition-colors">
+                        <div className="flex justify-between items-start mb-5 gap-2">
+                            <div className="w-16 h-16 bg-[#F3F4F6] rounded-[20px] flex shrink-0 items-center justify-center transition-colors">
                                 <FileText className="w-8 h-8 text-[#115E59]" />
                             </div>
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                handlePrint([test]);
-                            }} className="w-12 h-12 bg-[#F9FAFB] text-slate-500 hover:text-[#115E59] hover:bg-slate-100 rounded-[18px] flex items-center justify-center transition-colors shadow-sm" title="Joriy Testni PDF qilish">
-                                <Printer className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
+                                <button onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEdit(test);
+                                }} className="w-11 h-11 flex shrink-0 items-center justify-center bg-[#FFF7ED] text-[#F97316] hover:bg-[#FFEDD5] rounded-[14px] transition-colors" title="Testni Tahrirlash/Ko'rish">
+                                    <Edit2 className="w-5 h-5" />
+                                </button>
+                                <button onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteTarget({ id: test.id, title: test.title });
+                                }} className="w-11 h-11 flex shrink-0 items-center justify-center bg-[#FEF2F2] text-[#EF4444] hover:bg-[#FEE2E2] rounded-[14px] transition-colors" title="Testni O'chirish">
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                                <button onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePrint([test]);
+                                }} className="w-11 h-11 bg-[#F9FAFB] text-slate-500 hover:text-[#115E59] hover:bg-slate-100 rounded-[14px] flex items-center justify-center transition-colors shadow-sm" title="Joriy Testni PDF qilish">
+                                    <Printer className="w-5 h-5" />
+                                </button>
+                            </div>
                         </div>
                         <h3 className="text-[26px] font-bold text-slate-800 line-clamp-1 leading-tight tracking-tight mb-1">{test.title}</h3>
                         <p className="text-[15px] font-bold text-slate-400 mb-5">{test.questions?.length || 0} ta tayyor savollar</p>
@@ -282,12 +296,12 @@ export default function FolderView() {
                             </div>
                         </div>
 
-                        <div className="mt-auto flex flex-wrap xl:flex-nowrap gap-2 w-full border-t border-slate-100 pt-5">
+                        <div className="mt-auto flex gap-2 w-full border-t border-slate-100 pt-5">
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 navigate(`/dashboard/test/${test.id}/results`);
-                            }} className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 bg-[#EFF6FF] text-[#3B82F6] font-bold py-3.5 hover:bg-[#DBEAFE] rounded-[18px] transition-colors shrink-0" title="O'quvchilar natijalari">
-                                <BarChart2 className="w-4 h-4 text-[#3B82F6]" /> <span className="truncate">Natijalar</span>
+                            }} className="flex-1 flex items-center justify-center gap-1.5 bg-[#EFF6FF] text-[#3B82F6] font-bold py-3.5 hover:bg-[#DBEAFE] rounded-[18px] transition-colors shrink-0" title="O'quvchilar natijalari">
+                                <BarChart2 className="w-5 h-5 text-[#3B82F6]" /> <span>Natijalar</span>
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
@@ -295,26 +309,14 @@ export default function FolderView() {
                                 navigator.clipboard.writeText(link);
                                 setCopiedId(test.id);
                                 setTimeout(() => setCopiedId(null), 2000);
-                            }} className={`flex-1 min-w-[90px] flex items-center justify-center gap-1.5 font-bold py-3.5 rounded-[18px] transition-colors shrink-0 ${copiedId === test.id ? 'bg-[#10B981] text-white hover:bg-[#059669]' : 'bg-[#F3F4F6] text-[#0F172A] hover:bg-[#E5E7EB]'}`}>
-                                {copiedId === test.id ? <><CheckCircle2 className="w-4 h-4" /> Olindi</> : <><Link2 className="w-4 h-4" /> <span className="truncate">Havola</span></>}
+                            }} className={`flex-1 flex items-center justify-center gap-1.5 font-bold py-3.5 rounded-[18px] transition-colors shrink-0 ${copiedId === test.id ? 'bg-[#10B981] text-white hover:bg-[#059669]' : 'bg-[#F3F4F6] text-[#0F172A] hover:bg-[#E5E7EB]'}`}>
+                                {copiedId === test.id ? <><CheckCircle2 className="w-5 h-5" /> Olindi</> : <><Link2 className="w-5 h-5" /> <span>Havola</span></>}
                             </button>
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 setQuizTarget(test);
                             }} className="w-[52px] h-[52px] items-center justify-center bg-[#EFF6FF] text-[#3B82F6] hover:bg-[#DBEAFE] rounded-[18px] transition-colors flex shrink-0" title="Viktorinani Telegramga yuborish">
                                 <Send className="w-5 h-5" />
-                            </button>
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEdit(test);
-                            }} className="w-[52px] h-[52px] flex shrink-0 items-center justify-center bg-[#FFF7ED] text-[#F97316] hover:bg-[#FFEDD5] rounded-[18px] transition-colors" title="Testni Tahrirlash/Ko'rish">
-                                <Edit2 className="w-5 h-5" />
-                            </button>
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteTarget({ id: test.id, title: test.title });
-                            }} className="w-[52px] h-[52px] flex shrink-0 items-center justify-center bg-[#FEF2F2] text-[#EF4444] hover:bg-[#FEE2E2] rounded-[18px] transition-colors" title="Testni O'chirish">
-                                <Trash2 className="w-5 h-5" />
                             </button>
                         </div>
                     </motion.div>
