@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion } from 'framer-motion'
-import { User, Clock, CheckCircle2, AlertCircle, Loader2, XCircle, ArrowRight } from 'lucide-react'
+import { User, Clock, CheckCircle2, Loader2, XCircle } from 'lucide-react'
 
 export default function TestPlayer() {
     const { id } = useParams()
