@@ -1,0 +1,258 @@
+import { useEffect, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2 } from 'lucide-react'
+
+function parseTestText(rawText: string) {
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    const questions: any[] = [];
+    let currentQ: any = null;
+    const qRegex = /^\d+[\.\)]\s*(.*)/;
+    const optRegex = /^([A-Ea-e])[\.\)]\s*(.*)/;
+
+    for (const line of lines) {
+        const qMatch = line.match(qRegex);
+        if (qMatch) {
+            if (currentQ) questions.push(currentQ);
+            currentQ = { id: crypto.randomUUID(), question: qMatch[1] || line, options: [] };
+            continue;
+        }
+        const optMatch = line.match(optRegex);
+        if (optMatch && currentQ) {
+            currentQ.options.push({ id: crypto.randomUUID(), text: optMatch[2] || line, label: optMatch[1].toUpperCase() });
+            continue;
+        }
+        if (currentQ && currentQ.options.length === 0) currentQ.question += '\n' + line;
+    }
+    if (currentQ) questions.push(currentQ);
+    return questions;
+}
+
+const Toggle = ({ checked, onChange, label, desc }: any) => (
+    <div className="flex items-center justify-between p-4 bg-zinc-50 border-2 border-transparent hover:border-zinc-200 rounded-2xl cursor-pointer transition-all" onClick={() => onChange(!checked)}>
+        <div className="pr-4">
+            <h4 className="font-bold text-zinc-900">{label}</h4>
+            <p className="text-xs font-semibold text-zinc-500 mt-1">{desc}</p>
+        </div>
+        <div className={`w-12 h-6 md:w-14 md:h-7 shrink-0 rounded-full p-1 transition-colors relative ${checked ? 'bg-[#31C48D]' : 'bg-zinc-300'}`}>
+            <div className={`w-4 h-4 md:w-5 md:h-5 rounded-full bg-white transition-transform ${checked ? 'translate-x-6 md:translate-x-7' : 'translate-x-0'}`} />
+        </div>
+    </div>
+)
+
+export default function FolderView() {
+    const { id } = useParams()
+    const navigate = useNavigate()
+    const [folder, setFolder] = useState<any>(null)
+    const [tests, setTests] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [parsing, setParsing] = useState(false)
+    const [creationMode, setCreationMode] = useState<'auto' | 'manual'>('auto')
+
+    const [testTitle, setTestTitle] = useState('')
+    const [description, setDescription] = useState('')
+    const [timeLimit, setTimeLimit] = useState('')
+    const [startTime, setStartTime] = useState('')
+    const [endTime, setEndTime] = useState('')
+    const [showResults, setShowResults] = useState(true)
+    const [interactiveMode, setInteractiveMode] = useState(false)
+
+    const [rawText, setRawText] = useState('')
+
+    const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
+    const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
+
+    const fetchFolderData = async () => {
+        setLoading(true)
+        const { data: folderData } = await supabase.from('folders').select('*').eq('id', id).single()
+        if (folderData) {
+            setFolder(folderData)
+            const { data: testsData } = await supabase.from('tests').select('*').eq('folder_id', id).order('created_at', { ascending: false })
+            if (testsData) setTests(testsData)
+        }
+        setLoading(false)
+    }
+
+    useEffect(() => { if (id) fetchFolderData() }, [id])
+
+    const addQ = () => setManualQs([...manualQs, getEmptyQ()])
+    const rmQ = (qid: string) => setManualQs(manualQs.filter(q => q.id !== qid))
+    const upQ = (id: string, field: string, val: any) => setManualQs(manualQs.map(q => q.id === id ? { ...q, [field]: val } : q))
+
+    const handleSave = async () => {
+        if (!testTitle.trim()) return alert("Sarlavhani kiritish majburiy!")
+        setParsing(true)
+
+        let finalQuestions = []
+        if (creationMode === 'auto') {
+            finalQuestions = parseTestText(rawText)
+            if (finalQuestions.length === 0) return alert("Matnda savollar topilmadi."), setParsing(false);
+        } else {
+            const valid = manualQs.every(q => q.question.trim() && q.options.every((o: any) => o.text.trim()) && q.correctAnswer);
+            if (!valid) return alert("Barcha variantlar va to'g'ri javoblarni belgilang!"), setParsing(false);
+            finalQuestions = manualQs;
+        }
+
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+
+        const { error } = await supabase.from('tests').insert([{
+            folder_id: id,
+            user_id: user.id,
+            title: testTitle,
+            questions: finalQuestions,
+            answers: {},
+            settings: {
+                description: description.trim(),
+                timeLimit: timeLimit ? parseInt(timeLimit) : null,
+                startTime: startTime || null,
+                endTime: endTime || null,
+                showResults,
+                interactiveMode
+            },
+            is_active: true
+        }])
+
+        if (!error) {
+            setIsModalOpen(false)
+            setTestTitle(''); setDescription(''); setRawText(''); setManualQs([getEmptyQ()])
+            fetchFolderData()
+        } else { alert("Xatolik: " + error.message) }
+        setParsing(false)
+    }
+
+    if (loading) return <div className="h-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#004B49]" /></div>
+    if (!folder) return <div className="p-10 text-center font-bold text-xl">Papka topilmadi.</div>
+
+    return (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="h-full relative pb-20">
+            <button onClick={() => navigate('/dashboard/folders')} className="flex items-center gap-2 text-zinc-500 hover:text-zinc-900 font-bold mb-6 bg-zinc-100 hover:bg-zinc-200 px-4 py-2 rounded-xl w-fit">
+                <ArrowLeft className="w-5 h-5" /> Orqaga
+            </button>
+
+            <div className="flex justify-between items-end mb-10">
+                <div>
+                    <h1 className="text-4xl font-black text-zinc-900 tracking-tight">{folder.name}</h1>
+                    <p className="text-zinc-500 font-medium mt-2 text-lg">Ichki testlar ro'yxati</p>
+                </div>
+                <button onClick={() => setIsModalOpen(true)} className="px-6 py-3.5 bg-[#004B49] text-white flex gap-2 items-center rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39]">
+                    <Plus className="w-5 h-5" /> Yangi Test Yaratish
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tests.map(test => (
+                    <motion.div whileHover={{ y: -4 }} key={test.id} className="bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm hover:shadow-xl transition-all flex flex-col group">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="w-14 h-14 bg-[#EEF2F1] group-hover:bg-[#004B49] rounded-xl flex items-center justify-center transition-colors">
+                                <FileText className="w-7 h-7 text-[#004B49] group-hover:text-white" />
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-black text-zinc-900 line-clamp-1">{test.title}</h3>
+                        <p className="text-sm font-bold text-zinc-400 mb-6">{test.questions?.length || 0} ta tayyor savollar</p>
+                    </motion.div>
+                ))}
+            </div>
+
+            <AnimatePresence>
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-zinc-900/80 backdrop-blur-md" onClick={() => setIsModalOpen(false)} />
+                        <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-[40px] w-full max-w-7xl h-[90vh] relative z-10 shadow-2xl flex flex-col overflow-hidden">
+
+                            <div className="px-8 py-6 border-b border-zinc-100 flex justify-between items-center shrink-0">
+                                <h2 className="text-3xl font-black text-zinc-900">Test Markazi</h2>
+                                <div className="flex bg-zinc-100 p-1 rounded-2xl w-[400px]">
+                                    <button onClick={() => setCreationMode('manual')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${creationMode === 'manual' ? 'bg-white shadow text-[#004B49]' : 'text-zinc-500'}`}>Qo'lda kiritish</button>
+                                    <button onClick={() => setCreationMode('auto')} className={`flex-1 flex justify-center items-center gap-2 py-2.5 rounded-xl font-bold text-sm ${creationMode === 'auto' ? 'bg-[#004B49] shadow text-white' : 'text-zinc-500'}`}><Wand2 className="w-4 h-4" /> Avto (Parser)</button>
+                                </div>
+                                <button onClick={() => setIsModalOpen(false)} className="p-3 text-zinc-400 hover:bg-zinc-100 rounded-full"><X className="w-6 h-6" /></button>
+                            </div>
+
+                            <div className="flex-1 overflow-hidden flex flex-col md:flex-row bg-[#FBFBFA]">
+                                <div className="flex-1 overflow-y-auto p-8 border-r border-zinc-100 bg-white custom-scrollbar">
+                                    {creationMode === 'auto' ? (
+                                        <div className="h-full flex flex-col">
+                                            <label className="block text-sm font-bold text-zinc-700 mb-3 ml-2 uppercase">Test matni</label>
+                                            <textarea value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="1. O'zbekistonning poytaxti qayer?&#10;A) Buxoro B) Toshkent C) Samarqand D) Xiva" className="flex-1 w-full px-6 py-5 bg-zinc-50 border-2 border-zinc-100 rounded-3xl outline-none focus:border-[#004B49] focus:bg-white text-lg resize-none" />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-8 pb-10">
+                                            <h3 className="text-2xl font-black text-zinc-900 mb-6">Savollar darchasi</h3>
+                                            {manualQs.map((q, qIndex) => (
+                                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={q.id} className="bg-white border-2 border-zinc-100 p-8 rounded-[32px] shadow-sm relative group hover:border-[#004B49]/20 transition-all">
+                                                    <button onClick={() => rmQ(q.id)} className="absolute top-6 right-6 p-2 text-red-400 hover:bg-red-50 rounded-full opacity-0 group-hover:opacity-100"><Trash2 className="w-5 h-5" /></button>
+                                                    <div className="mb-6">
+                                                        <label className="block text-sm font-black text-zinc-300 mb-3 uppercase">{qIndex + 1}-Savol</label>
+                                                        <textarea value={q.question} onChange={e => upQ(q.id, 'question', e.target.value)} placeholder="Savolni kiriting..." className="w-full p-4 bg-zinc-50 border-2 border-zinc-100 rounded-2xl outline-none focus:bg-white text-xl font-bold" rows={2} />
+                                                    </div>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        {q.options.map((opt: any, oIndex: number) => {
+                                                            const sel = q.correctAnswer === opt.label;
+                                                            return (
+                                                                <div key={opt.id} className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer ${sel ? 'border-[#31C48D] bg-[#31C48D]/5' : 'border-zinc-100 bg-white hover:border-zinc-300'}`}>
+                                                                    <input type="radio" checked={sel} onChange={() => upQ(q.id, 'correctAnswer', opt.label)} className="w-5 h-5 text-[#31C48D] cursor-pointer" />
+                                                                    <span className={`font-black text-lg ${sel ? 'text-[#31C48D]' : 'text-zinc-400'}`}>{opt.label})</span>
+                                                                    <input type="text" value={opt.text} onChange={e => { const newOpts = [...q.options]; newOpts[oIndex].text = e.target.value; upQ(q.id, 'options', newOpts); }} className="flex-1 bg-transparent border-none outline-none font-semibold text-lg" placeholder="Variant matni" />
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                            <button onClick={addQ} className="w-full py-5 border-2 border-dashed border-zinc-300 text-zinc-500 font-bold text-lg rounded-[32px] hover:border-[#004B49] hover:bg-[#004B49]/5 hover:text-[#004B49] flex items-center justify-center gap-2"><Plus className="w-6 h-6" /> Qushish</button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="w-full md:w-[450px] overflow-y-auto p-8 custom-scrollbar">
+                                    <h3 className="text-xl font-black text-zinc-900 mb-6 flex items-center gap-2"><SettingsIcon className="w-5 h-5 text-[#004B49]" /> Texnik Sozlamalar</h3>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase">Majburiy Sarlavha</label>
+                                            <input type="text" value={testTitle} onChange={(e) => setTestTitle(e.target.value)} placeholder="Matematika Testi" className="w-full px-5 py-4 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-[#004B49] font-bold text-zinc-900" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase">Ta'rif (Ixtiyoriy)</label>
+                                            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Test qoidalari..." className="w-full px-5 py-3 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-[#004B49] font-medium text-zinc-600 resize-none min-h-[100px]" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2">
+                                                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Vaqt Chegarasi</label>
+                                                <div className="relative">
+                                                    <input type="number" min="1" value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} placeholder="Bo'sh bo'lsa cheksiz" className="w-full px-5 py-4 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-[#004B49] font-bold text-zinc-900" />
+                                                    <span className="absolute right-5 top-1/2 -translate-y-1/2 font-bold text-zinc-400">daqiqa</span>
+                                                </div>
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Boshlanish</label>
+                                                <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-[#004B49] font-medium text-sm text-zinc-700" />
+                                            </div>
+                                            <div className="col-span-2 sm:col-span-1">
+                                                <label className="block text-xs font-bold text-zinc-500 mb-2 uppercase flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Tugash V.</label>
+                                                <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl outline-none focus:border-[#004B49] font-medium text-sm text-zinc-700" />
+                                            </div>
+                                        </div>
+                                        <div className="pt-4 space-y-3">
+                                            <Toggle checked={showResults} onChange={setShowResults} label="Natijalarni ko'rsatish" desc="Test yakunida to'g'ri/xato fosh etish" />
+                                            <Toggle checked={interactiveMode} onChange={setInteractiveMode} label="Interaktiv rejim" desc="Savollarni bittadan ko'rsatish" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="px-8 py-5 border-t border-zinc-100 bg-white/50 backdrop-blur-md flex justify-end shrink-0 z-20">
+                                <button onClick={handleSave} disabled={parsing} className="px-10 py-4 w-full sm:w-auto rounded-2xl bg-[#004B49] text-white font-black text-xl hover:bg-[#003B39] disabled:opacity-50 flex items-center justify-center gap-3 shadow-2xl hover:-translate-y-1">
+                                    {parsing ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Saqlash va Tasdiqlash <CheckCircle2 className="w-6 h-6" /></>}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    )
+}
