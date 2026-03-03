@@ -7,6 +7,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/dashboard/DashboardHome';
 import Folders from './pages/dashboard/Folders';
 import FolderView from './pages/dashboard/FolderView';
+import TestResults from './pages/dashboard/TestResults';
 import TestPlayer from './pages/student/TestPlayer';
 
 export default function App() {
@@ -23,7 +24,7 @@ export default function App() {
             <Route index element={<DashboardHome />} />
             <Route path="folders" element={<Folders />} />
             <Route path="folders/:id" element={<FolderView />} />
-            <Route path="results" element={<div className="font-bold text-2xl text-zinc-400 p-10 text-center mt-20">Natijalar Oynasi</div>} />
+            <Route path="test/:testId/results" element={<TestResults />} />
           </Route>
         </Route>
 

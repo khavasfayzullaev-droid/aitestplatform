@@ -240,7 +240,7 @@ export default function FolderView() {
                         <div className="mt-auto flex gap-2 w-full border-t border-zinc-100 pt-5">
                             <button onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/dashboard/results`); // Temporary route, should be parameterized if possible
+                                navigate(`/dashboard/test/${test.id}/results`);
                             }} className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-bold py-3 hover:bg-blue-100 rounded-xl transition-colors shrink-0" title="O'quvchilar natijalari">
                                 <BarChart2 className="w-4 h-4" /> Natijalar
                             </button>

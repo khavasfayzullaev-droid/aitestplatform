@@ -71,3 +71,9 @@ create policy "Teachers can view submissions for their tests" on public.submissi
   );
 -- Students (anon) can insert their submissions
 create policy "Students can insert submissions" on public.submissions for insert with check (true);
+
+-- Teachers can delete submissions for their tests
+create policy "Teachers can delete submissions for their tests" on public.submissions 
+  for delete using (
+    exists (select 1 from public.tests where id = public.submissions.test_id and teacher_id = auth.uid())
+  );
