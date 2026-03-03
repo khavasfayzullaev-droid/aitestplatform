@@ -99,6 +99,7 @@ export default function FolderView() {
     const [endTime, setEndTime] = useState('')
     const [showResults, setShowResults] = useState(true)
     const [interactiveMode, setInteractiveMode] = useState(false)
+    const [telegramChatId, setTelegramChatId] = useState('')
 
     const [rawText, setRawText] = useState('')
     const [copiedId, setCopiedId] = useState<string | null>(null)
@@ -136,6 +137,7 @@ export default function FolderView() {
         setEndTime(test.settings?.endTime || '');
         setShowResults(test.settings?.showResults ?? true);
         setInteractiveMode(test.settings?.interactiveMode ?? false);
+        setTelegramChatId(test.settings?.telegramChatId || '');
         setManualQs(test.questions && test.questions.length > 0 ? test.questions : [getEmptyQ()]);
         setIsModalOpen(true);
     }
@@ -144,7 +146,7 @@ export default function FolderView() {
         setEditingTestId(null);
         setCreationMode('auto');
         setTestTitle(''); setDescription(''); setTimeLimit(''); setStartTime(''); setEndTime('');
-        setShowResults(true); setInteractiveMode(false); setRawText(''); setManualQs([getEmptyQ()]);
+        setShowResults(true); setInteractiveMode(false); setTelegramChatId(''); setRawText(''); setManualQs([getEmptyQ()]);
         setIsModalOpen(true);
     }
 
@@ -191,7 +193,8 @@ export default function FolderView() {
                 startTime: startTime || null,
                 endTime: endTime || null,
                 showResults,
-                interactiveMode
+                interactiveMode,
+                telegramChatId: telegramChatId.trim()
             }
         };
 
@@ -391,6 +394,11 @@ export default function FolderView() {
                                         <div className="pt-4 space-y-3">
                                             <Toggle checked={showResults} onChange={setShowResults} label="Natijalarni ko'rsatish" desc="Test yakunida to'g'ri/xato fosh etish" />
                                             <Toggle checked={interactiveMode} onChange={setInteractiveMode} label="Interaktiv rejim" desc="Savollarni bittadan ko'rsatish" />
+                                        </div>
+                                        <div className="pt-2 bg-blue-50/50 p-4 border border-blue-100 rounded-2xl">
+                                            <label className="block text-xs font-bold text-blue-600 mb-2 uppercase flex items-center gap-1">✈️ Telegram Bildirishnoma (Chat ID)</label>
+                                            <input type="text" value={telegramChatId} onChange={(e) => setTelegramChatId(e.target.value)} placeholder="Misol uchun: -100123... (ixtiyoriy)" className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl outline-none focus:border-blue-500 font-medium text-zinc-900 text-sm" />
+                                            <p className="text-[11px] text-blue-500/80 mt-2 font-medium leading-relaxed">Agar ushbu test natijalari yakunlanganda telegram kanal yoki botingizga bormoqchi bo'lsa, chat id ni yozing!</p>
                                         </div>
                                     </div>
                                 </div>

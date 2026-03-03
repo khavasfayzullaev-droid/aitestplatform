@@ -74,6 +74,18 @@ export default function TestPlayer() {
         } else {
             setResult(data)
             setStep('result')
+
+            // Telegram notification integration
+            if (testData.settings && testData.settings.telegramChatId) {
+                const p = Math.round((data.score / (data.total || 1)) * 100);
+                const msg = `📝 <b>Yangi Natija!</b>\n\n🎯 <b>Test:</b> ${testData.title}\n👤 <b>O'quvchi:</b> ${studentName}\n✅ <b>To'g'ri:</b> ${data.score} ta (Jami ${data.total})\n📊 <b>Foiz:</b> ${p}%\n\n📱 <i>AI Test Platform</i>`;
+
+                fetch('/api/telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: testData.settings.telegramChatId, message: msg })
+                }).catch(console.error);
+            }
         }
         setLoading(false)
     }
@@ -185,7 +197,7 @@ export default function TestPlayer() {
                     </div>
 
                     <div className="bg-[#F3F4F6] rounded-[20px] p-6 text-[15px] font-medium text-slate-600 leading-relaxed text-center">
-                        Test yakunlandi. Agar natijalarni ko'rib bo'lgan bo'lsangiz,<br/> ushbu sahifani yopishingiz mumkin.
+                        Test yakunlandi. Agar natijalarni ko'rib bo'lgan bo'lsangiz,<br /> ushbu sahifani yopishingiz mumkin.
                     </div>
                 </motion.div>
 
@@ -224,7 +236,7 @@ export default function TestPlayer() {
                                             {q.options.map((opt: any) => {
                                                 const isSelected = opt.label === detail.studentAnswer;
                                                 const isActuallyCorrect = opt.label === detail.correctAnswer;
-                                                
+
                                                 let containerClasses = "border-slate-200 bg-white text-slate-600";
                                                 let circleClasses = "border-slate-200 border-[2px]";
                                                 let textClasses = "font-medium";
