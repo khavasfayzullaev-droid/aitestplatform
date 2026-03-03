@@ -25,10 +25,10 @@ create table public.folders (
 alter table public.folders enable row level security;
 create policy "Teachers can manage own folders" on public.folders for all using (auth.uid() = teacher_id);
 
--- 3. Tests Table (Isolated by teacher_id)
+-- 3. Tests Table (Isolated by user_id)
 create table public.tests (
   id uuid default uuid_generate_v4() primary key,
-  teacher_id uuid references public.users(id) on delete cascade not null default auth.uid(),
+  user_id uuid references public.users(id) on delete cascade not null default auth.uid(),
   folder_id uuid references public.folders(id) on delete set null,
   title text not null,
   questions jsonb not null default '[]'::jsonb, -- Array of Questions {id, text, options, correctAnswer}
@@ -41,7 +41,7 @@ create table public.tests (
 
 alter table public.tests enable row level security;
 -- Only the owner teacher can view/edit the test fully natively.
-create policy "Teachers can manage own tests" on public.tests for all using (auth.uid() = teacher_id);
+create policy "Teachers can manage own tests" on public.tests for all using (auth.uid() = user_id);
 
 -- NO SELECT POLICY FOR STUDENTS ON 'tests' TABLE! 
 -- Reason: To prevent students from looking at the raw JSON and finding 'correctAnswer' using network devtools.
@@ -67,7 +67,7 @@ alter table public.submissions enable row level security;
 -- Teachers can view submissions ONLY for their own tests
 create policy "Teachers can view submissions for their tests" on public.submissions 
   for select using (
-    exists (select 1 from public.tests where id = public.submissions.test_id and teacher_id = auth.uid())
+    exists (select 1 from public.tests where id = public.submissions.test_id and user_id = auth.uid())
   );
 -- Students (anon) can insert their submissions
 create policy "Students can insert submissions" on public.submissions for insert with check (true);
@@ -75,5 +75,5 @@ create policy "Students can insert submissions" on public.submissions for insert
 -- Teachers can delete submissions for their tests
 create policy "Teachers can delete submissions for their tests" on public.submissions 
   for delete using (
-    exists (select 1 from public.tests where id = public.submissions.test_id and teacher_id = auth.uid())
+    exists (select 1 from public.tests where id = public.submissions.test_id and user_id = auth.uid())
   );
