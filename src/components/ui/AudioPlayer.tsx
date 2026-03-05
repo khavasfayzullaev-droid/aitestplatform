@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react'
-import { Play, Pause, Volume2, ShieldAlert } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Play, Pause, ShieldAlert } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function AudioPlayer({ src, playOnce = false }: { src: string, playOnce?: boolean }) {
