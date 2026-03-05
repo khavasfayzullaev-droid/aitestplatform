@@ -21,8 +21,25 @@ export default function DashboardLayout() {
             {/* Sidebar */}
             <aside className="w-[280px] bg-white border-r border-zinc-100 flex flex-col items-start py-8">
                 <div className="px-8 mb-10 w-full">
-                    <div className="text-3xl font-black tracking-tighter text-zinc-900">
-                        AI Test<span className="text-[#31C48D]">.</span>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <img
+                                src="/logo.png"
+                                alt="AI Test Logo"
+                                className="w-12 h-12 object-contain rounded-xl shadow-sm"
+                            />
+                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+                                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            </div>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-xl font-black tracking-tighter text-zinc-900 leading-none">
+                                AI Test<span className="text-[#31C48D]">.</span>
+                            </span>
+                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mt-1">
+                                Platform
+                            </span>
+                        </div>
                     </div>
                 </div>
 
