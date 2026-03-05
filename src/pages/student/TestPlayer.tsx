@@ -135,6 +135,16 @@ export default function TestPlayer() {
                         const actualIndex = isInteractive ? currentQIndex : i;
                         return (
                             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} key={q.id} className="bg-white p-6 sm:p-10 rounded-[32px] shadow-sm mb-6 border border-zinc-100">
+                                {q.mediaUrl && q.mediaType === 'image' && (
+                                    <div className="mb-6 rounded-2xl overflow-hidden border border-zinc-100 bg-zinc-50 flex justify-center">
+                                        <img src={q.mediaUrl} alt="" className="max-h-[300px] object-contain w-full" />
+                                    </div>
+                                )}
+                                {q.mediaUrl && q.mediaType === 'audio' && (
+                                    <div className="mb-6 p-4 bg-purple-50/50 rounded-2xl border border-purple-100/50 flex justify-center">
+                                        <audio src={q.mediaUrl} controls className="w-full max-w-md h-12" />
+                                    </div>
+                                )}
                                 <h3 className="text-xl sm:text-2xl font-bold text-zinc-900 mb-8 leading-relaxed whitespace-pre-wrap">
                                     <span className="text-zinc-400 mr-2 font-black">{actualIndex + 1}.</span> {q.question}
                                 </h3>

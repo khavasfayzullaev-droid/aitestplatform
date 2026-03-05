@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer, Send, AlertCircle, Info } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, X, Wand2, Plus, Settings as SettingsIcon, Clock, Calendar, CheckCircle2, Trash2, BarChart2, Edit2, Link2, Printer, Send, AlertCircle, Info, ImagePlus, Music, XCircle } from 'lucide-react'
 import ConfirmModal from '../../components/ConfirmModal'
 import { useReactToPrint } from 'react-to-print'
 import { useRef } from 'react'
@@ -116,6 +116,7 @@ export default function FolderView() {
 
     const getEmptyQ = () => ({ id: crypto.randomUUID(), question: '', options: [{ id: crypto.randomUUID(), text: '', label: 'A' }, { id: crypto.randomUUID(), text: '', label: 'B' }, { id: crypto.randomUUID(), text: '', label: 'C' }, { id: crypto.randomUUID(), text: '', label: 'D' }], correctAnswer: '' })
     const [manualQs, setManualQs] = useState<any[]>([getEmptyQ()])
+    const [uploadingQId, setUploadingQId] = useState<string | null>(null)
 
     // Telegram Quiz state
     const [quizTarget, setQuizTarget] = useState<any>(null);
@@ -176,9 +177,10 @@ export default function FolderView() {
 
     useEffect(() => { if (id) fetchFolderData() }, [id])
 
-    const addQ = () => setManualQs([...manualQs, getEmptyQ()])
-    const rmQ = (qid: string) => setManualQs(manualQs.filter(q => q.id !== qid))
-    const upQ = (id: string, field: string, val: any) => setManualQs(manualQs.map(q => q.id === id ? { ...q, [field]: val } : q))
+    const addQ = () => setManualQs(prev => [...prev, getEmptyQ()])
+    const rmQ = (qid: string) => setManualQs(prev => prev.filter(q => q.id !== qid))
+    const upQ = (id: string, field: string, val: any) => setManualQs(prev => prev.map(q => q.id === id ? { ...q, [field]: val } : q))
+    const upQMulti = (id: string, fields: Record<string, any>) => setManualQs(prev => prev.map(q => q.id === id ? { ...q, ...fields } : q))
 
     const handleSave = async () => {
         if (!testTitle.trim()) return alert("Sarlavhani kiritish majburiy!")
@@ -399,6 +401,64 @@ export default function FolderView() {
                                                         <label className="block text-sm font-black text-zinc-300 mb-3 uppercase">{qIndex + 1}-Savol</label>
                                                         <textarea value={q.question} onChange={e => upQ(q.id, 'question', e.target.value)} placeholder="Savolni kiriting..." className="w-full p-4 bg-zinc-50 border-2 border-zinc-100 rounded-2xl outline-none focus:bg-white text-xl font-bold" rows={2} />
                                                     </div>
+
+                                                    {/* Media Upload */}
+                                                    {uploadingQId === q.id ? (
+                                                        <div className="mb-6 flex flex-col items-center justify-center py-8 bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl border-2 border-dashed border-blue-200">
+                                                            <div className="relative w-12 h-12 mb-3">
+                                                                <div className="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+                                                                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"></div>
+                                                            </div>
+                                                            <p className="text-sm font-bold text-blue-600">Yuklanmoqda...</p>
+                                                            <p className="text-xs text-blue-400 font-medium mt-1">Iltimos kuting</p>
+                                                        </div>
+                                                    ) : q.mediaUrl ? (
+                                                        <div className="mb-6 relative group/media">
+                                                            {q.mediaType === 'image' ? (
+                                                                <div className="rounded-2xl overflow-hidden border border-zinc-100 bg-zinc-50 flex justify-center">
+                                                                    <img src={q.mediaUrl} alt="Media" className="max-h-[200px] object-contain" />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100 flex items-center gap-3">
+                                                                    <Music className="w-5 h-5 text-purple-500" />
+                                                                    <audio src={q.mediaUrl} controls className="flex-1 h-10" />
+                                                                </div>
+                                                            )}
+                                                            <button onClick={() => upQMulti(q.id, { mediaUrl: '', mediaType: '' })} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full shadow-lg opacity-0 group-hover/media:opacity-100 transition-opacity">
+                                                                <XCircle className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-3 mb-6">
+                                                            <label className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-600 rounded-xl text-sm font-bold cursor-pointer hover:bg-blue-100 transition-colors">
+                                                                <ImagePlus className="w-4 h-4" /> Rasm
+                                                                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                                                    const file = e.target.files?.[0]; if (!file) return;
+                                                                    setUploadingQId(q.id);
+                                                                    const path = `questions/${Date.now()}_${file.name}`;
+                                                                    const { error } = await supabase.storage.from('test_media').upload(path, file);
+                                                                    if (error) { setUploadingQId(null); return alert('Yuklash xatosi: ' + error.message); }
+                                                                    const { data: urlData } = supabase.storage.from('test_media').getPublicUrl(path);
+                                                                    upQMulti(q.id, { mediaUrl: urlData.publicUrl, mediaType: 'image' });
+                                                                    setUploadingQId(null);
+                                                                }} />
+                                                            </label>
+                                                            <label className="flex items-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-600 rounded-xl text-sm font-bold cursor-pointer hover:bg-purple-100 transition-colors">
+                                                                <Music className="w-4 h-4" /> Audio (MP3)
+                                                                <input type="file" accept="audio/*" className="hidden" onChange={async (e) => {
+                                                                    const file = e.target.files?.[0]; if (!file) return;
+                                                                    setUploadingQId(q.id);
+                                                                    const path = `questions/${Date.now()}_${file.name}`;
+                                                                    const { error } = await supabase.storage.from('test_media').upload(path, file);
+                                                                    if (error) { setUploadingQId(null); return alert('Yuklash xatosi: ' + error.message); }
+                                                                    const { data: urlData } = supabase.storage.from('test_media').getPublicUrl(path);
+                                                                    upQMulti(q.id, { mediaUrl: urlData.publicUrl, mediaType: 'audio' });
+                                                                    setUploadingQId(null);
+                                                                }} />
+                                                            </label>
+                                                        </div>
+                                                    )}
+
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                         {q.options.map((opt: any, oIndex: number) => {
                                                             const sel = q.correctAnswer === opt.label;

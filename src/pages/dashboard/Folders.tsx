@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FolderPlus, Folder, X, Loader2, Trash2, Edit2 } from 'lucide-react'
+import { FolderPlus, Folder, X, Loader2, Trash2, Edit2, HelpCircle, CheckCircle2, ChevronRight, FileText, Link2, Printer, Send, ImagePlus, Music } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import ConfirmModal from '../../components/ConfirmModal'
@@ -17,6 +17,7 @@ export default function Folders() {
     const [editTarget, setEditTarget] = useState<{ id: string, name: string } | null>(null)
     const [editFolderName, setEditFolderName] = useState('')
     const [isEditing, setIsEditing] = useState(false)
+    const [isGuideOpen, setIsGuideOpen] = useState(false)
 
     const fetchFolders = async () => {
         setLoading(true)
@@ -104,13 +105,18 @@ export default function Folders() {
                     <h1 className="text-4xl font-black text-zinc-900 tracking-tight">Papkalar va Testlar 📁</h1>
                     <p className="text-zinc-500 font-medium mt-2 text-lg">Barcha materiallarni tartibli o'z saflariga ajrating</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="px-6 py-3.5 bg-[#004B49] text-white flex items-center gap-2 rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39] transition-all hover:-translate-y-0.5"
-                >
-                    <FolderPlus className="w-5 h-5" />
-                    Yangi Papka
-                </button>
+                <div className="flex gap-3">
+                    <button onClick={() => setIsGuideOpen(true)} className="px-5 py-3.5 bg-amber-50 text-amber-700 flex gap-2 items-center rounded-2xl font-bold hover:bg-amber-100 transition-colors border border-amber-200">
+                        <HelpCircle className="w-5 h-5" /> Qo'llanma
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-6 py-3.5 bg-[#004B49] text-white flex items-center gap-2 rounded-2xl font-bold shadow-xl shadow-[#004B49]/20 hover:bg-[#003B39] transition-all hover:-translate-y-0.5"
+                    >
+                        <FolderPlus className="w-5 h-5" />
+                        Yangi Papka
+                    </button>
+                </div>
             </div>
 
             {loading ? (
@@ -271,6 +277,172 @@ export default function Folders() {
                 title="Papkani o'chirish!"
                 message={`Haqiqatan ham "${deleteTarget?.name}" papkasini va uning ichidagi BARCHA testlarni o'chirib yubormoqchimisiz? Bu amalni orqaga qaytarib bo'lmaydi!`}
             />
+
+            {/* Guide Modal */}
+            <AnimatePresence>
+                {isGuideOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setIsGuideOpen(false)}>
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                            className="bg-white rounded-[32px] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+
+                            <div className="sticky top-0 bg-white/90 backdrop-blur-md px-8 py-6 border-b border-zinc-100 flex justify-between items-center z-10 rounded-t-[32px]">
+                                <h2 className="text-2xl font-black text-zinc-900 flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                                        <HelpCircle className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    Platformadan Foydalanish
+                                </h2>
+                                <button onClick={() => setIsGuideOpen(false)} className="p-2 hover:bg-zinc-100 rounded-xl"><X className="w-5 h-5" /></button>
+                            </div>
+
+                            <div className="p-8 space-y-6">
+                                {/* 1-qadam */}
+                                <div className="bg-gradient-to-br from-teal-50 to-emerald-50 p-6 rounded-2xl border border-teal-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center font-black text-sm">1</div>
+                                        <h3 className="font-black text-teal-900 text-lg">Papka yarating</h3>
+                                    </div>
+                                    <p className="text-teal-700/70 font-medium leading-relaxed pl-11">
+                                        <strong>"Yangi Papka"</strong> tugmasini bosing va papka nomini kiriting (masalan: "Ona tili 10-sinf" yoki "Ingliz tili"). Papkalar testlaringizni tartiblash uchun ishlatiladi.
+                                    </p>
+                                </div>
+
+                                {/* 2-qadam */}
+                                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-black text-sm">2</div>
+                                        <h3 className="font-black text-indigo-900 text-lg">Papkaga kiring va test yarating</h3>
+                                    </div>
+                                    <p className="text-indigo-700/70 font-medium leading-relaxed pl-11 mb-3">
+                                        Papkani bosing va ichida <strong>"Yangi Test"</strong> tugmasini bosing. Test yaratishning 2 ta usuli bor:
+                                    </p>
+                                    <div className="pl-11 space-y-3">
+                                        <div className="bg-white p-4 rounded-xl border border-indigo-100">
+                                            <p className="font-bold text-indigo-800 mb-1">🪄 Avtomatik rejim</p>
+                                            <p className="text-indigo-600/70 text-sm font-medium">Savollar matnini to'liq yopishtirasiz — tizim avtomatik savollar va javoblarni ajratib beradi. Eng tez usul!</p>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-indigo-100">
+                                            <p className="font-bold text-indigo-800 mb-1">✍️ Qo'lda rejim</p>
+                                            <p className="text-indigo-600/70 text-sm font-medium">Har bir savolni alohida kiriting, variantlarni yozing va to'g'ri javobni belgilang.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3-qadam */}
+                                <div className="bg-gradient-to-br from-blue-50 to-sky-50 p-6 rounded-2xl border border-blue-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm">3</div>
+                                        <h3 className="font-black text-blue-900 text-lg">Rasm va audio qo'shing</h3>
+                                    </div>
+                                    <p className="text-blue-700/70 font-medium leading-relaxed pl-11 mb-3">
+                                        Qo'lda rejimda har bir savolga qo'shimcha material biriktira olasiz:
+                                    </p>
+                                    <div className="pl-11 space-y-2">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <ImagePlus className="w-4 h-4 text-blue-500" />
+                                            <span className="font-bold text-blue-800">Rasm</span>
+                                            <ChevronRight className="w-3 h-3 text-blue-300" />
+                                            <span className="text-blue-600">Savolga tegishli rasm yuklang</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Music className="w-4 h-4 text-blue-500" />
+                                            <span className="font-bold text-blue-800">Audio</span>
+                                            <ChevronRight className="w-3 h-3 text-blue-300" />
+                                            <span className="text-blue-600">Tinglash uchun MP3 fayl yuklang</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 4-qadam */}
+                                <div className="bg-gradient-to-br from-violet-50 to-fuchsia-50 p-6 rounded-2xl border border-violet-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 bg-violet-600 text-white rounded-full flex items-center justify-center font-black text-sm">4</div>
+                                        <h3 className="font-black text-violet-900 text-lg">Sozlamalarni belgilang</h3>
+                                    </div>
+                                    <p className="text-violet-700/70 font-medium leading-relaxed pl-11 mb-3">
+                                        Test yaratishda o'ng tomondagi sozlamalar panelida quyidagilarni sozlashingiz mumkin:
+                                    </p>
+                                    <div className="pl-11 space-y-1.5">
+                                        <p className="text-violet-600 text-sm font-medium">⏱ <strong>Vaqt chegarasi</strong> — daqiqada (bo'sh bo'lsa cheksiz)</p>
+                                        <p className="text-violet-600 text-sm font-medium">📅 <strong>Boshlanish va tugash vaqti</strong> — test qachon ochilishi</p>
+                                        <p className="text-violet-600 text-sm font-medium">📊 <strong>Natijalarni ko'rsatish</strong> — o'quvchiga to'g'ri/xato ko'rsatish</p>
+                                        <p className="text-violet-600 text-sm font-medium">🔄 <strong>Interaktiv rejim</strong> — savollarni bittadan ko'rsatish</p>
+                                    </div>
+                                </div>
+
+                                {/* 5-qadam */}
+                                <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-2xl border border-emerald-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-black text-sm">5</div>
+                                        <h3 className="font-black text-emerald-900 text-lg">O'quvchilarga havola yuboring</h3>
+                                    </div>
+                                    <p className="text-emerald-700/70 font-medium leading-relaxed pl-11">
+                                        Test yaratilgach, kartochkada <strong>"Havolani nusxalash"</strong> tugmasi paydo bo'ladi. Uni bosing va havolani o'quvchilarga messenja orqali yuboring. O'quvchi havolani ochib, ism-familiyasini kiritib test topshiradi.
+                                    </p>
+                                </div>
+
+                                {/* 6-qadam */}
+                                <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-2xl border border-amber-100">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-8 h-8 bg-amber-600 text-white rounded-full flex items-center justify-center font-black text-sm">6</div>
+                                        <h3 className="font-black text-amber-900 text-lg">Natijalarni ko'ring</h3>
+                                    </div>
+                                    <p className="text-amber-700/70 font-medium leading-relaxed pl-11">
+                                        Har bir test kartochkasida <strong>"Natijalar"</strong> tugmasi bor. Uni bosib o'quvchilarning ballari, to'g'ri/xato javoblari va topshirish vaqtlarini ko'rasiz.
+                                    </p>
+                                </div>
+
+                                {/* Qo'shimcha imkoniyatlar */}
+                                <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-200">
+                                    <h4 className="font-black text-zinc-700 text-sm uppercase mb-4 flex items-center gap-2">
+                                        <CheckCircle2 className="w-4 h-4 text-zinc-500" /> Qo'shimcha Imkoniyatlar
+                                    </h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="bg-white p-4 rounded-xl border border-zinc-100 flex items-center gap-3">
+                                            <Printer className="w-5 h-5 text-zinc-400" />
+                                            <div>
+                                                <p className="font-bold text-zinc-700 text-sm">Chop etish</p>
+                                                <p className="text-zinc-400 text-xs font-medium">Testni qog'ozda chiqarish</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-zinc-100 flex items-center gap-3">
+                                            <Send className="w-5 h-5 text-zinc-400" />
+                                            <div>
+                                                <p className="font-bold text-zinc-700 text-sm">Telegramga yuborish</p>
+                                                <p className="text-zinc-400 text-xs font-medium">Viktorina sifatida kanalga</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-zinc-100 flex items-center gap-3">
+                                            <FileText className="w-5 h-5 text-zinc-400" />
+                                            <div>
+                                                <p className="font-bold text-zinc-700 text-sm">Tahrirlash</p>
+                                                <p className="text-zinc-400 text-xs font-medium">Test savollarini o'zgartirish</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-white p-4 rounded-xl border border-zinc-100 flex items-center gap-3">
+                                            <Link2 className="w-5 h-5 text-zinc-400" />
+                                            <div>
+                                                <p className="font-bold text-zinc-700 text-sm">Havola</p>
+                                                <p className="text-zinc-400 text-xs font-medium">Har bir test uchun alohida</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="px-8 py-6 border-t border-zinc-100 bg-white/50 backdrop-blur-md rounded-b-[32px]">
+                                <button onClick={() => setIsGuideOpen(false)}
+                                    className="w-full py-4 rounded-2xl bg-zinc-900 text-white font-black text-lg hover:bg-zinc-800 transition-all">
+                                    Tushundim, yopish ✓
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     )
 }

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { LayoutGrid, FolderOpen, LogOut } from 'lucide-react'
+import { LayoutGrid, FolderOpen, LogOut, ClipboardCheck } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export default function DashboardLayout() {
@@ -13,6 +13,7 @@ export default function DashboardLayout() {
     const navItems = [
         { name: 'Asosiy', path: '/dashboard', icon: <LayoutGrid className="w-5 h-5" /> },
         { name: 'Papkalar va Testlar', path: '/dashboard/folders', icon: <FolderOpen className="w-5 h-5" /> },
+        { name: 'Mock Exam', path: '/dashboard/mock-exams', icon: <ClipboardCheck className="w-5 h-5" /> },
     ]
 
     return (
